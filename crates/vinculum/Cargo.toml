@@ -1,0 +1,11 @@
+[package]
+name = "vinculum"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+vinculum_macros = { path = "../vinculum-macros" }
+
+[[example]]
+name = "add"
+path = "../../examples/add/main.rs"
