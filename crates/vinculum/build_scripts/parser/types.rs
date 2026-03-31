@@ -51,20 +51,20 @@ impl Type {
 
     pub(crate) fn return_converter(&self) -> &'static str {
         match self {
-            Type::Int8 => "Value::into_int8",
-            Type::Int16 => "Value::into_int16",
-            Type::Int32 => "Value::into_int32",
-            Type::Int64 => "Value::into_int64",
-            Type::Word8 => "Value::into_word8",
-            Type::Word16 => "Value::into_word16",
-            Type::Word32 => "Value::into_word32",
-            Type::Word64 => "Value::into_word64",
-            Type::Float32 => "Value::into_float32",
-            Type::Float64 => "Value::into_float64",
-            Type::Bool => "Value::into_bool",
-            Type::Char => "Value::into_char",
-            Type::String => "Value::into_string",
-            Type::Bytes => "Value::into_bytes",
+            Type::Int8 => "into_int8",
+            Type::Int16 => "into_int16",
+            Type::Int32 => "into_int32",
+            Type::Int64 => "into_int64",
+            Type::Word8 => "into_word8",
+            Type::Word16 => "into_word16",
+            Type::Word32 => "into_word32",
+            Type::Word64 => "into_word64",
+            Type::Float32 => "into_float32",
+            Type::Float64 => "into_float64",
+            Type::Bool => "into_bool",
+            Type::Char => "into_char",
+            Type::String => "into_string",
+            Type::Bytes => "into_bytes",
         }
     }
 

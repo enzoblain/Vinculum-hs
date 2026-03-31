@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::{env, fs};
 
-pub(super) fn find_ghc_version() -> Option<String> {
+pub(crate) fn find_ghc_version() -> Option<String> {
     let output = Command::new("ghc").arg("--numeric-version").output().ok()?;
     if output.status.success() {
         Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
@@ -11,7 +11,7 @@ pub(super) fn find_ghc_version() -> Option<String> {
     }
 }
 
-pub(super) fn find_rts_dir() -> String {
+pub(crate) fn find_rts_dir() -> String {
     if let Ok(dir) = env::var("HASKELL_RTS_DIR") {
         return dir;
     }
@@ -82,7 +82,7 @@ pub(super) fn find_rts_dir() -> String {
     );
 }
 
-pub(super) fn find_rts_lib(rts_dir: &str) -> String {
+pub(crate) fn find_rts_lib(rts_dir: &str) -> String {
     if let Ok(lib) = env::var("HASKELL_RTS_LIB") {
         return lib;
     }
@@ -142,7 +142,10 @@ pub(crate) fn compile_haskell_library(
     let runtime = haskell_dir.join("Runtime.hs");
     let codec = haskell_dir.join("Codec.hs");
     let dispatch = haskell_dir.join("Dispatch.hs");
-    let stubs_rts = c_dir.join("StubbsRTS.c");
+
+    let stubs_rts_src = c_dir.join("StubbsRTS.c");
+    let stubs_rts = build_dir.join("StubbsRTS.c");
+    fs::copy(&stubs_rts_src, &stubs_rts).expect("Failed to copy StubbsRTS.c to build directory");
 
     let include_path = format!(
         "-i{}",

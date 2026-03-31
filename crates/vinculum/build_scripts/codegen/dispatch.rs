@@ -1,9 +1,12 @@
 use std::fs;
 use std::path::Path;
 
-use crate::build_scripts::config::types::{Function, Type};
+use crate::build_scripts::parser::types::{Function, Type};
 
-pub(crate) fn generate_haskell_dispatch(file_modules: &[(String, Vec<Function>)], out_dir: &Path) {
+pub(crate) fn generate_haskell_dispatch(
+    file_modules: &[(String, Vec<Function>)],
+    out_dir: &Path,
+) -> Result<(), std::io::Error> {
     let dest = out_dir.join("Dispatch.hs");
 
     let mut code = String::new();
@@ -27,7 +30,7 @@ pub(crate) fn generate_haskell_dispatch(file_modules: &[(String, Vec<Function>)]
         "    | otherwise = error (\"Unknown Haskell function: \" ++ C8.unpack functionName)\n",
     );
 
-    fs::write(&dest, code).expect("Failed to write Haskell dispatch module");
+    fs::write(&dest, code)
 }
 
 fn generate_dispatch_branch(function: &Function, module_name: &str) -> String {
@@ -46,7 +49,13 @@ fn generate_dispatch_branch(function: &Function, module_name: &str) -> String {
         .join(" ");
 
     let qualified_name = format!("{}_{}", module_name.to_lowercase(), function.name);
-    let function_call = format!("{} {}", qualified_name, call_args);
+
+    let function_call = if call_args.is_empty() {
+        qualified_name.clone()
+    } else {
+        format!("{} {}", qualified_name, call_args)
+    };
+
     let converted_result = function.r#return.haskell_return_expr(&function_call);
     let encoder = function.r#return.haskell_encoder();
 
@@ -65,7 +74,7 @@ fn generate_dispatch_branch(function: &Function, module_name: &str) -> String {
 }
 
 impl Type {
-    fn haskell_value_pattern(&self, name: &str) -> String {
+    pub(crate) fn haskell_value_pattern(&self, name: &str) -> String {
         match self {
             Type::Int8 => format!("VInt8 {}", name),
             Type::Int16 => format!("VInt16 {}", name),
@@ -84,7 +93,7 @@ impl Type {
         }
     }
 
-    fn haskell_encoder(&self) -> &'static str {
+    pub(crate) fn haskell_encoder(&self) -> &'static str {
         match self {
             Type::Int8 => "encodeInt8",
             Type::Int16 => "encodeInt16",

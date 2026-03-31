@@ -1,21 +1,22 @@
 use std::path::Path;
 
 use super::config::BuildConfig;
+use super::errors::BuildValidationError;
 
-pub(crate) fn validate_library_dir(path: &Path) {
+pub(crate) fn validate_library_dir(path: &Path) -> Result<(), BuildValidationError> {
     if !path.exists() {
-        panic!(
-            "Invalid configuration: HASKELL_LIB_DIR does not exist: {}",
-            path.display()
-        );
+        return Err(BuildValidationError::LibraryDirDoesNotExist(
+            path.to_path_buf(),
+        ));
     }
 
     if !path.is_dir() {
-        panic!(
-            "Invalid configuration: HASKELL_LIB_DIR is not a directory: {}",
-            path.display()
-        );
+        return Err(BuildValidationError::LibraryDirIsNotDirectory(
+            path.to_path_buf(),
+        ));
     }
+
+    Ok(())
 }
 
 pub(crate) fn shared_library_extension() -> &'static str {
@@ -36,25 +37,21 @@ pub(crate) fn library_filename(name: &str, ext: &str) -> String {
     }
 }
 
-pub(crate) fn validate_main_library(config: &BuildConfig) {
+pub(crate) fn validate_main_library(config: &BuildConfig) -> Result<(), BuildValidationError> {
     let lib_path = Path::new(&config.lib_dir);
     let ext = shared_library_extension();
     let lib_filename = library_filename(&config.lib_file, ext);
     let full_lib_path = lib_path.join(&lib_filename);
 
     if !full_lib_path.exists() {
-        panic!(
-            "Linking error: Haskell library not found at expected path: {}",
-            full_lib_path.display()
-        );
+        return Err(BuildValidationError::MainLibraryNotFound(full_lib_path));
     }
 
     if !full_lib_path.is_file() {
-        panic!(
-            "Linking error: Expected Haskell library is not a file: {}",
-            full_lib_path.display()
-        );
+        return Err(BuildValidationError::MainLibraryIsNotFile(full_lib_path));
     }
+
+    Ok(())
 }
 
 pub(crate) fn warn_if_rts_missing(config: &BuildConfig) {

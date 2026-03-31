@@ -2,7 +2,7 @@ use std::ffi::c_char;
 use std::os::raw::c_int;
 use std::ptr;
 
-use crate::ffi::{haskell_exit, haskell_init};
+use crate::ffi::bindings::{haskell_exit, haskell_init};
 
 pub fn init() {
     unsafe {

@@ -1,10 +1,11 @@
 use std::path::PathBuf;
 use std::{env, fs};
 
-use crate::build_scripts::config::types::Function;
+use crate::build_scripts::parser::types::Function;
 
 fn to_snake_case(s: &str) -> String {
     let mut result = String::new();
+
     for (i, ch) in s.chars().enumerate() {
         if ch.is_uppercase() && i > 0 {
             result.push('_');
@@ -13,6 +14,7 @@ fn to_snake_case(s: &str) -> String {
             result.push(ch.to_lowercase().next().unwrap_or(ch));
         }
     }
+
     result
 }
 
@@ -27,13 +29,16 @@ pub(crate) fn generate_functions_with_modules(file_modules: &[(String, Vec<Funct
 
     for (module_name, functions) in file_modules {
         let rust_module_name = to_snake_case(module_name);
+
         code.push_str(&format!("pub mod {} {{\n", rust_module_name));
-        code.push_str("    use crate::value::{Value, call_haskell_typed};\n\n");
+        code.push_str("    use crate::ffi::call::call_haskell_typed;\n");
+        code.push_str("    use crate::ffi::value::Value;\n\n");
 
         for function in functions {
             code.push_str("    ");
             code.push_str(&generate_function(function, module_name).replace('\n', "\n    "));
-            code.push_str("\n\n");
+            code.push('\n');
+            code.push('\n');
         }
 
         code.push_str("}\n\n");
@@ -59,16 +64,18 @@ fn generate_function(function: &Function, module_name: &str) -> String {
 
     let return_type = function.r#return.rust_type();
     let converter = function.r#return.return_converter();
-
     let qualified_name = format!("{}_{}", to_snake_case(module_name), function.name);
 
     format!(
-        "pub fn {name}({args_sig}) -> {return_type} {{\n    let result = call_haskell_typed(\"{qualified_name}\", &[{args_values}]);\n    {converter}(result)\n}}",
+        "pub fn {name}({args_sig}) -> {return_type} {{
+    let result = call_haskell_typed(\"{qualified_name}\", &[{args_values}]);
+    result.{converter}()
+}}",
         name = function.name,
         args_sig = args_sig,
         return_type = return_type,
+        qualified_name = qualified_name,
         args_values = args_values,
         converter = converter,
-        qualified_name = qualified_name,
     )
 }

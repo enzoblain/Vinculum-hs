@@ -5,18 +5,12 @@ mod build_scripts;
 
 use build_scripts::build::{compiler, config, linker, validator};
 use build_scripts::codegen::{dispatch, functions as codegen_functions};
-use build_scripts::config::parser;
-
-fn capitalize_first(s: &str) -> String {
-    let mut chars = s.chars();
-    match chars.next() {
-        None => String::new(),
-        Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
-    }
-}
+use build_scripts::parser::parse;
+use build_scripts::utils::capitalize_first;
 
 fn main() {
-    let config = config::load_config();
+    let config = config::load_config()
+        .unwrap_or_else(|e| panic!("Failed to load build configuration: {}", e));
 
     let haskell_dir = Path::new(&config.functions_dir);
 
@@ -34,26 +28,38 @@ fn main() {
         );
     }
 
+    let target_haskell_dir = Path::new(&config.lib_dir);
+    fs::create_dir_all(target_haskell_dir)
+        .unwrap_or_else(|e| panic!("Failed to create Haskell build dir: {}", e));
+
     let mut file_modules = Vec::new();
 
-    let target_haskell_dir = Path::new(&config.lib_dir);
-    fs::create_dir_all(target_haskell_dir).expect("Failed to create haskell build dir");
+    let entries = fs::read_dir(haskell_dir).unwrap_or_else(|e| {
+        panic!(
+            "Failed to read directory '{}': {}",
+            haskell_dir.display(),
+            e
+        )
+    });
 
-    if let Ok(entries) = fs::read_dir(haskell_dir) {
-        for entry in entries.flatten() {
-            let path = entry.path();
-            if path.is_file()
-                && path.extension().and_then(|s| s.to_str()) == Some("hs")
-                && let Some(file_name) = path.file_stem().and_then(|s| s.to_str())
-            {
-                let target_file = target_haskell_dir.join(format!("{}.hs", file_name));
-                fs::copy(&path, &target_file).expect("Failed to copy .hs file");
+    for entry in entries.flatten() {
+        let path = entry.path();
 
-                let file_functions = parser::parse_haskell_functions(&path);
-                if !file_functions.is_empty() {
-                    let module_name = capitalize_first(file_name);
-                    file_modules.push((module_name.clone(), file_functions.clone()));
-                }
+        if path.is_file()
+            && path.extension().and_then(|s| s.to_str()) == Some("hs")
+            && let Some(file_name) = path.file_stem().and_then(|s| s.to_str())
+        {
+            let target_file = target_haskell_dir.join(format!("{}.hs", file_name));
+
+            fs::copy(&path, &target_file)
+                .unwrap_or_else(|e| panic!("Failed to copy '{}': {}", path.display(), e));
+
+            let file_functions = parse::parse_haskell_functions(&path)
+                .unwrap_or_else(|e| panic!("Failed to parse '{}': {}", path.display(), e));
+
+            if !file_functions.is_empty() {
+                let module_name = capitalize_first(file_name);
+                file_modules.push((module_name.clone(), file_functions.clone()));
             }
         }
     }
@@ -93,19 +99,21 @@ fn main() {
 
     let user_functions_path = target_haskell_dir.join("UserFunctions.hs");
     fs::write(&user_functions_path, user_functions_content)
-        .expect("Failed to write UserFunctions.hs");
+        .unwrap_or_else(|e| panic!("Failed to write '{}': {}", user_functions_path.display(), e));
 
     codegen_functions::generate_functions_with_modules(&file_modules);
 
     let haskell_build_dir = Path::new("build_scripts/haskell");
     let c_dir = Path::new("build_scripts/c");
 
-    dispatch::generate_haskell_dispatch(&file_modules, haskell_build_dir);
+    dispatch::generate_haskell_dispatch(&file_modules, haskell_build_dir)
+        .unwrap_or_else(|e| panic!("Failed to generate Haskell dispatch: {}", e));
 
     let lib_path = Path::new(&config.lib_dir);
-    fs::create_dir_all(lib_path).expect("Failed to create Haskell library output directory");
+    fs::create_dir_all(lib_path)
+        .unwrap_or_else(|e| panic!("Failed to create Haskell library output directory: {}", e));
 
-    validator::validate_library_dir(lib_path);
+    validator::validate_library_dir(lib_path).unwrap_or_else(|e| panic!("{e}"));
 
     compiler::compile_haskell_library(
         haskell_build_dir,
@@ -115,12 +123,15 @@ fn main() {
         &config.lib_file,
     );
 
-    validator::validate_main_library(&config);
+    validator::validate_main_library(&config).unwrap_or_else(|e| panic!("{e}"));
+
     validator::warn_if_rts_missing(&config);
 
     compiler::copy_rts_library(&config.rts_dir, &config.rts_lib, lib_path);
 
-    linker::emit_link_instructions(&config);
+    linker::emit_link_instructions(&config)
+        .unwrap_or_else(|e| panic!("Failed to emit link instructions: {}", e));
+
     linker::emit_rerun_instructions(&config.functions_dir);
 
     println!(

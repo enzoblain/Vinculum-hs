@@ -8,7 +8,7 @@ use syn::{parse, parse_macro_input, ExprLit, ItemFn, Lit, LitStr, MetaNameValue}
 pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
 
-    let haskell_file = if !args.is_empty() {
+    let haskell_folder = if !args.is_empty() {
         if let Ok(meta) = parse::<MetaNameValue>(args.clone()) {
             if meta.path.is_ident("haskell_directory") {
                 if let syn::Expr::Lit(ExprLit {
@@ -39,11 +39,12 @@ pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
         block,
     } = input;
 
-    let expanded = if let Some(dir_path) = haskell_file {
+    let expanded = if let Some(dir_path) = haskell_folder {
         quote! {
             #(#attrs)*
             #vis #sig {
                 const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
+
                 let full_dir = {
                     let root = std::path::Path::new(WORKSPACE_ROOT);
                     let workspace = root.parent()
@@ -55,7 +56,9 @@ pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
                         .and_then(|p| p.to_str().map(|s| s.to_string()))
                         .unwrap_or_else(|| dir.to_string_lossy().to_string())
                 };
+
                 unsafe { std::env::set_var("HASKELL_DIR", full_dir); }
+
                 vinculum::runtime::init();
                 #block
                 vinculum::runtime::shutdown();
