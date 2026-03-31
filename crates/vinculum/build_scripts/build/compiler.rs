@@ -144,30 +144,38 @@ pub(crate) fn compile_haskell_library(
     let dispatch = haskell_dir.join("Dispatch.hs");
     let stubs_rts = c_dir.join("StubbsRTS.c");
 
+    let include_path = format!(
+        "-i{}",
+        output_dir.to_str().expect("Invalid output directory path")
+    );
+
     let status = Command::new("ghc")
-        .args([
-            "-dynamic",
-            "-shared",
-            "-outputdir",
-            build_dir.to_str().expect("Invalid build directory path"),
-            "-odir",
-            build_dir.to_str().expect("Invalid object directory path"),
-            "-hidir",
+        .arg("-dynamic")
+        .arg("-shared")
+        .arg(&include_path)
+        .arg("-outputdir")
+        .arg(build_dir.to_str().expect("Invalid build directory path"))
+        .arg("-odir")
+        .arg(build_dir.to_str().expect("Invalid object directory path"))
+        .arg("-hidir")
+        .arg(
             build_dir
                 .to_str()
                 .expect("Invalid interface directory path"),
-            "-stubdir",
-            build_dir.to_str().expect("Invalid stub directory path"),
-            "-o",
-            output_file.to_str().expect("Invalid output library path"),
-            runtime.to_str().expect("Invalid Runtime.hs path"),
-            codec.to_str().expect("Invalid Codec.hs path"),
-            dispatch.to_str().expect("Invalid Dispatch.hs path"),
+        )
+        .arg("-stubdir")
+        .arg(build_dir.to_str().expect("Invalid stub directory path"))
+        .arg("-o")
+        .arg(output_file.to_str().expect("Invalid output library path"))
+        .arg(runtime.to_str().expect("Invalid Runtime.hs path"))
+        .arg(codec.to_str().expect("Invalid Codec.hs path"))
+        .arg(dispatch.to_str().expect("Invalid Dispatch.hs path"))
+        .arg(
             user_functions_file
                 .to_str()
                 .expect("Invalid UserFunctions.hs path"),
-            stubs_rts.to_str().expect("Invalid StubbsRTS.c path"),
-        ])
+        )
+        .arg(stubs_rts.to_str().expect("Invalid StubbsRTS.c path"))
         .status()
         .expect("Failed to invoke GHC");
 

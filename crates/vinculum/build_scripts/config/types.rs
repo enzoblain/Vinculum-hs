@@ -1,14 +1,17 @@
+#[derive(Clone)]
 pub(crate) struct Function {
     pub name: String,
     pub args: Vec<Arg>,
     pub r#return: Type,
 }
 
+#[derive(Clone)]
 pub(crate) struct Arg {
     pub name: String,
     pub r#type: Type,
 }
 
+#[derive(Clone)]
 pub(crate) enum Type {
     Int8,
     Int16,

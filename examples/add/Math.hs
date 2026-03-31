@@ -1,4 +1,4 @@
-module Script where
+module Math where
 
 import Data.Int
 

@@ -2,22 +2,6 @@ use std::path::Path;
 
 use super::config::BuildConfig;
 
-pub(crate) fn validate_functions_file(path: &Path) {
-    if !path.exists() {
-        panic!(
-            "Invalid configuration: HASKELL_FILE does not exist: {}",
-            path.display()
-        );
-    }
-
-    if !path.is_file() {
-        panic!(
-            "Invalid configuration: HASKELL_FILE is not a file: {}",
-            path.display()
-        );
-    }
-}
-
 pub(crate) fn validate_library_dir(path: &Path) {
     if !path.exists() {
         panic!(

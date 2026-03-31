@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{ExprLit, ItemFn, Lit, LitStr, MetaNameValue, parse, parse_macro_input};
+use syn::{parse, parse_macro_input, ExprLit, ItemFn, Lit, LitStr, MetaNameValue};
 
 #[proc_macro_attribute]
 pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
@@ -39,23 +39,23 @@ pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
         block,
     } = input;
 
-    let expanded = if let Some(file_path) = haskell_file {
+    let expanded = if let Some(dir_path) = haskell_file {
         quote! {
             #(#attrs)*
             #vis #sig {
                 const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
-                let full_path = {
+                let full_dir = {
                     let root = std::path::Path::new(WORKSPACE_ROOT);
                     let workspace = root.parent()
                         .and_then(|p| p.parent())
                         .unwrap_or(root);
-                    workspace.join(#file_path)
-                        .canonicalize()
+                    let dir = workspace.join(#dir_path);
+                    dir.canonicalize()
                         .ok()
                         .and_then(|p| p.to_str().map(|s| s.to_string()))
-                        .unwrap_or_else(|| workspace.join(#file_path).to_string_lossy().to_string())
+                        .unwrap_or_else(|| dir.to_string_lossy().to_string())
                 };
-                unsafe { std::env::set_var("HASKELL_FILE", full_path); }
+                unsafe { std::env::set_var("HASKELL_DIR", full_dir); }
                 vinculum::runtime::init();
                 #block
                 vinculum::runtime::shutdown();

@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::build_scripts::config::types::{Function, Type};
 
-pub(crate) fn generate_haskell_dispatch(functions: &[Function], out_dir: &Path) {
+pub(crate) fn generate_haskell_dispatch(file_modules: &[(String, Vec<Function>)], out_dir: &Path) {
     let dest = out_dir.join("Dispatch.hs");
 
     let mut code = String::new();
@@ -12,13 +12,15 @@ pub(crate) fn generate_haskell_dispatch(functions: &[Function], out_dir: &Path) 
     code.push_str("import qualified Data.ByteString as BS\n");
     code.push_str("import qualified Data.ByteString.Char8 as C8\n");
     code.push_str("import Codec\n");
-    code.push_str("import Script\n\n");
+    code.push_str("import UserFunctions\n\n");
     code.push_str("dispatchUserFunction :: BS.ByteString -> BS.ByteString -> IO BS.ByteString\n");
     code.push_str("dispatchUserFunction functionName input\n");
 
-    for function in functions {
-        code.push_str(&generate_dispatch_branch(function));
-        code.push('\n');
+    for (module_name, functions) in file_modules {
+        for function in functions {
+            code.push_str(&generate_dispatch_branch(function, module_name));
+            code.push('\n');
+        }
     }
 
     code.push_str(
@@ -28,7 +30,7 @@ pub(crate) fn generate_haskell_dispatch(functions: &[Function], out_dir: &Path) 
     fs::write(&dest, code).expect("Failed to write Haskell dispatch module");
 }
 
-fn generate_dispatch_branch(function: &Function) -> String {
+fn generate_dispatch_branch(function: &Function, module_name: &str) -> String {
     let args_pattern = function
         .args
         .iter()
@@ -43,18 +45,19 @@ fn generate_dispatch_branch(function: &Function) -> String {
         .collect::<Vec<_>>()
         .join(" ");
 
-    let function_call = format!("{} {}", function.name, call_args);
+    let qualified_name = format!("{}_{}", module_name.to_lowercase(), function.name);
+    let function_call = format!("{} {}", qualified_name, call_args);
     let converted_result = function.r#return.haskell_return_expr(&function_call);
     let encoder = function.r#return.haskell_encoder();
 
     format!(
         concat!(
-            "    | functionName == C8.pack \"{name}\" =\n",
+            "    | functionName == C8.pack \"{qualified_name}\" =\n",
             "        case decodeValues input of\n",
             "            [{args_pattern}] -> pure ({encoder} ({converted_result}))\n",
-            "            _ -> error \"Invalid arguments for function '{name}'\""
+            "            _ -> error \"Invalid arguments for function '{qualified_name}'\""
         ),
-        name = function.name,
+        qualified_name = qualified_name,
         args_pattern = args_pattern,
         encoder = encoder,
         converted_result = converted_result,
