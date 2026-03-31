@@ -1,4 +1,6 @@
 module Script where
 
-add :: Int -> Int -> Int
+import Data.Int
+
+add :: Int64 -> Int64 -> Int64
 add a b = a + b

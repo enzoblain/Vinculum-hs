@@ -64,9 +64,18 @@ fn generate_dispatch_branch(function: &Function) -> String {
 impl Type {
     fn haskell_value_pattern(&self, name: &str) -> String {
         match self {
-            Type::Int => format!("VInt {}", name),
-            Type::Float => format!("VFloat {}", name),
+            Type::Int8 => format!("VInt8 {}", name),
+            Type::Int16 => format!("VInt16 {}", name),
+            Type::Int32 => format!("VInt32 {}", name),
+            Type::Int64 => format!("VInt64 {}", name),
+            Type::Word8 => format!("VWord8 {}", name),
+            Type::Word16 => format!("VWord16 {}", name),
+            Type::Word32 => format!("VWord32 {}", name),
+            Type::Word64 => format!("VWord64 {}", name),
+            Type::Float32 => format!("VFloat32 {}", name),
+            Type::Float64 => format!("VFloat64 {}", name),
             Type::Bool => format!("VBool {}", name),
+            Type::Char => format!("VChar {}", name),
             Type::String => format!("VString {}", name),
             Type::Bytes => format!("VBytes {}", name),
         }
@@ -74,9 +83,18 @@ impl Type {
 
     fn haskell_encoder(&self) -> &'static str {
         match self {
-            Type::Int => "encodeInt",
-            Type::Float => "encodeFloat",
+            Type::Int8 => "encodeInt8",
+            Type::Int16 => "encodeInt16",
+            Type::Int32 => "encodeInt32",
+            Type::Int64 => "encodeInt64",
+            Type::Word8 => "encodeWord8",
+            Type::Word16 => "encodeWord16",
+            Type::Word32 => "encodeWord32",
+            Type::Word64 => "encodeWord64",
+            Type::Float32 => "encodeFloat32",
+            Type::Float64 => "encodeFloat64",
             Type::Bool => "encodeBool",
+            Type::Char => "encodeChar",
             Type::String => "encodeString",
             Type::Bytes => "encodeBytes",
         }

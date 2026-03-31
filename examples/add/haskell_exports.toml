@@ -1,7 +1,7 @@
 [[function]]
 name = "add"
 args = [
-    { name = "a", type = "Int" },
-    { name = "b", type = "Int" }
+    { name = "a", type = "Int64" },
+    { name = "b", type = "Int64" }
 ]
-return = "Int"
+return = "Int64"

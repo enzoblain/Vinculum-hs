@@ -21,9 +21,18 @@ pub(crate) struct Arg {
 
 #[derive(Deserialize)]
 pub(crate) enum Type {
-    Int,
-    Float,
+    Int8,
+    Int16,
+    Int32,
+    Int64,
+    Word8,
+    Word16,
+    Word32,
+    Word64,
+    Float32,
+    Float64,
     Bool,
+    Char,
     String,
     Bytes,
 }
@@ -31,9 +40,18 @@ pub(crate) enum Type {
 impl Type {
     pub(crate) fn rust_type(&self) -> &'static str {
         match self {
-            Type::Int => "i64",
-            Type::Float => "f64",
+            Type::Int8 => "i8",
+            Type::Int16 => "i16",
+            Type::Int32 => "i32",
+            Type::Int64 => "i64",
+            Type::Word8 => "u8",
+            Type::Word16 => "u16",
+            Type::Word32 => "u32",
+            Type::Word64 => "u64",
+            Type::Float32 => "f32",
+            Type::Float64 => "f64",
             Type::Bool => "bool",
+            Type::Char => "char",
             Type::String => "String",
             Type::Bytes => "Vec<u8>",
         }
@@ -41,9 +59,18 @@ impl Type {
 
     pub(crate) fn return_converter(&self) -> &'static str {
         match self {
-            Type::Int => "Value::into_int",
-            Type::Float => "Value::into_float",
+            Type::Int8 => "Value::into_int8",
+            Type::Int16 => "Value::into_int16",
+            Type::Int32 => "Value::into_int32",
+            Type::Int64 => "Value::into_int64",
+            Type::Word8 => "Value::into_word8",
+            Type::Word16 => "Value::into_word16",
+            Type::Word32 => "Value::into_word32",
+            Type::Word64 => "Value::into_word64",
+            Type::Float32 => "Value::into_float32",
+            Type::Float64 => "Value::into_float64",
             Type::Bool => "Value::into_bool",
+            Type::Char => "Value::into_char",
             Type::String => "Value::into_string",
             Type::Bytes => "Value::into_bytes",
         }
@@ -51,9 +78,18 @@ impl Type {
 
     pub(crate) fn rust_value_ctor(&self, name: &str) -> String {
         match self {
-            Type::Int => format!("Value::Int({})", name),
-            Type::Float => format!("Value::Float({})", name),
+            Type::Int8 => format!("Value::Int8({})", name),
+            Type::Int16 => format!("Value::Int16({})", name),
+            Type::Int32 => format!("Value::Int32({})", name),
+            Type::Int64 => format!("Value::Int64({})", name),
+            Type::Word8 => format!("Value::Word8({})", name),
+            Type::Word16 => format!("Value::Word16({})", name),
+            Type::Word32 => format!("Value::Word32({})", name),
+            Type::Word64 => format!("Value::Word64({})", name),
+            Type::Float32 => format!("Value::Float32({})", name),
+            Type::Float64 => format!("Value::Float64({})", name),
             Type::Bool => format!("Value::Bool({})", name),
+            Type::Char => format!("Value::Char({})", name),
             Type::String => format!("Value::String({}.to_string())", name),
             Type::Bytes => format!("Value::Bytes({})", name),
         }
@@ -61,9 +97,18 @@ impl Type {
 
     pub(crate) fn haskell_arg_expr(&self, name: &str) -> String {
         match self {
-            Type::Int => format!("(fromIntegral {})", name),
-            Type::Float => name.to_string(),
+            Type::Int8 => format!("(fromIntegral {})", name),
+            Type::Int16 => format!("(fromIntegral {})", name),
+            Type::Int32 => format!("(fromIntegral {})", name),
+            Type::Int64 => format!("(fromIntegral {})", name),
+            Type::Word8 => format!("(fromIntegral {})", name),
+            Type::Word16 => format!("(fromIntegral {})", name),
+            Type::Word32 => format!("(fromIntegral {})", name),
+            Type::Word64 => format!("(fromIntegral {})", name),
+            Type::Float32 => name.to_string(),
+            Type::Float64 => name.to_string(),
             Type::Bool => name.to_string(),
+            Type::Char => name.to_string(),
             Type::String => name.to_string(),
             Type::Bytes => name.to_string(),
         }
@@ -71,9 +116,18 @@ impl Type {
 
     pub(crate) fn haskell_return_expr(&self, expr: &str) -> String {
         match self {
-            Type::Int => format!("(fromIntegral ({}))", expr),
-            Type::Float => expr.to_string(),
+            Type::Int8 => format!("(fromIntegral ({}))", expr),
+            Type::Int16 => format!("(fromIntegral ({}))", expr),
+            Type::Int32 => format!("(fromIntegral ({}))", expr),
+            Type::Int64 => format!("(fromIntegral ({}))", expr),
+            Type::Word8 => format!("(fromIntegral ({}))", expr),
+            Type::Word16 => format!("(fromIntegral ({}))", expr),
+            Type::Word32 => format!("(fromIntegral ({}))", expr),
+            Type::Word64 => format!("(fromIntegral ({}))", expr),
+            Type::Float32 => expr.to_string(),
+            Type::Float64 => expr.to_string(),
             Type::Bool => expr.to_string(),
+            Type::Char => expr.to_string(),
             Type::String => expr.to_string(),
             Type::Bytes => expr.to_string(),
         }
