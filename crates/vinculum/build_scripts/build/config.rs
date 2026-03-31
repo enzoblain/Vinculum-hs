@@ -1,5 +1,6 @@
 use crate::build_scripts::build::compiler::{find_rts_dir, find_rts_lib};
 use std::env;
+use std::path::Path;
 
 pub struct BuildConfig {
     pub lib_dir: String,
@@ -7,8 +8,32 @@ pub struct BuildConfig {
     pub rts_lib: String,
     pub rts_dir: String,
     pub functions_file: String,
-    pub haskell_dir: String,
-    pub c_dir: String,
+}
+
+fn find_haskell_file(workspace_root: &str) -> String {
+    if let Ok(file) = env::var("HASKELL_FILE") {
+        return file;
+    }
+
+    let examples_dir = Path::new(workspace_root).join("examples");
+    if examples_dir.exists() {
+        for entry in std::fs::read_dir(&examples_dir)
+            .unwrap_or_else(|_| std::fs::read_dir(workspace_root).unwrap())
+            .flatten()
+        {
+            let path = entry.path();
+            if path.is_dir() {
+                let script_file = path.join("Script.hs");
+                if script_file.exists()
+                    && let Some(s) = script_file.to_str()
+                {
+                    return s.to_string();
+                }
+            }
+        }
+    }
+
+    format!("{}/Script.hs", workspace_root)
 }
 
 pub fn load_config() -> BuildConfig {
@@ -23,15 +48,13 @@ pub fn load_config() -> BuildConfig {
         .unwrap_or_else(|| ".".to_string());
 
     let lib_dir = format!("{}/target/haskell", workspace_root);
+    let functions_file = find_haskell_file(&workspace_root);
 
     BuildConfig {
         lib_dir,
-        lib_file: env::var("HASKELL_LIB_FILE").unwrap_or_else(|_| "HSmylib".to_string()),
+        lib_file: "userLib".to_string(),
         rts_lib,
         rts_dir,
-        functions_file: env::var("HASKELL_FILE")
-            .unwrap_or_else(|_| format!("{}/examples/add/Script.hs", workspace_root)),
-        haskell_dir: format!("{}/crates/vinculum/build_scripts/haskell", workspace_root),
-        c_dir: format!("{}/crates/vinculum/build_scripts/c", workspace_root),
+        functions_file,
     }
 }

@@ -49,7 +49,6 @@ pub(crate) fn parse_haskell_functions(path: impl AsRef<Path>) -> Vec<Function> {
 
     flush(&mut current, &mut functions);
 
-    // Convert HsFunction to Function with type validation
     let typed_functions: Vec<Function> = functions
         .into_iter()
         .filter_map(convert_to_typed_function)

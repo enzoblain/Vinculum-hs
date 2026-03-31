@@ -2,7 +2,7 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse, parse_macro_input, ExprLit, ItemFn, Lit, LitStr, MetaNameValue};
+use syn::{ExprLit, ItemFn, Lit, LitStr, MetaNameValue, parse, parse_macro_input};
 
 #[proc_macro_attribute]
 pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
@@ -43,7 +43,19 @@ pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
         quote! {
             #(#attrs)*
             #vis #sig {
-                unsafe { std::env::set_var("HASKELL_FILE", #file_path); }
+                const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
+                let full_path = {
+                    let root = std::path::Path::new(WORKSPACE_ROOT);
+                    let workspace = root.parent()
+                        .and_then(|p| p.parent())
+                        .unwrap_or(root);
+                    workspace.join(#file_path)
+                        .canonicalize()
+                        .ok()
+                        .and_then(|p| p.to_str().map(|s| s.to_string()))
+                        .unwrap_or_else(|| workspace.join(#file_path).to_string_lossy().to_string())
+                };
+                unsafe { std::env::set_var("HASKELL_FILE", full_path); }
                 vinculum::runtime::init();
                 #block
                 vinculum::runtime::shutdown();

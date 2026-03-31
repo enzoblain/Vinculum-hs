@@ -17,8 +17,8 @@ fn main() {
 
     codegen_functions::generate_functions(&functions);
 
-    let haskell_dir = Path::new(&config.haskell_dir);
-    let c_dir = Path::new(&config.c_dir);
+    let haskell_dir = Path::new("build_scripts/haskell");
+    let c_dir = Path::new("build_scripts/c");
     let user_functions_path = Path::new(&config.functions_file);
 
     dispatch::generate_haskell_dispatch(&functions, haskell_dir);

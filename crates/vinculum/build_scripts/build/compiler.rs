@@ -59,7 +59,7 @@ pub(super) fn find_rts_dir() -> String {
     {
         let libdir = String::from_utf8_lossy(&output.stdout).trim().to_string();
 
-        if let Ok(entries) = std::fs::read_dir(&libdir) {
+        if let Ok(entries) = fs::read_dir(&libdir) {
             for entry in entries.flatten() {
                 let name = entry.file_name();
                 let name = name.to_string_lossy();
@@ -91,7 +91,7 @@ pub(super) fn find_rts_lib(rts_dir: &str) -> String {
         return format!("HSrts-ghc{}", version);
     }
 
-    if let Ok(entries) = std::fs::read_dir(rts_dir) {
+    if let Ok(entries) = fs::read_dir(rts_dir) {
         for entry in entries.flatten() {
             let name = entry.file_name();
             let name = name.to_string_lossy();
@@ -193,8 +193,6 @@ pub(crate) fn copy_rts_library(rts_dir: &str, _rts_lib: &str, output_dir: &Path)
 
         match fs::read_dir(rts_path) {
             Ok(entries) => {
-                let mut copied_count = 0;
-
                 for entry in entries.flatten() {
                     let path = entry.path();
 
@@ -204,19 +202,10 @@ pub(crate) fn copy_rts_library(rts_dir: &str, _rts_lib: &str, output_dir: &Path)
                     {
                         let dest = output_dir.join(file_str);
 
-                        match fs::copy(&path, &dest) {
-                            Ok(_) => copied_count += 1,
-                            Err(e) => println!("cargo:warning=Failed to copy {}: {}", file_str, e),
+                        if let Err(e) = fs::copy(&path, &dest) {
+                            println!("cargo:warning=Failed to copy {}: {}", file_str, e);
                         }
                     }
-                }
-
-                if copied_count > 0 {
-                    println!(
-                        "cargo:warning=Copied {} Haskell libraries to {}",
-                        copied_count,
-                        output_dir.display()
-                    );
                 }
             }
             Err(e) => {
