@@ -150,6 +150,14 @@ fn convert_to_typed_function(hs_func: HsFunction) -> Result<Function, ParseError
 }
 
 fn parse_haskell_type(type_str: &str) -> Result<Type, ParseError> {
+    let type_str = type_str.trim();
+
+    if let Some(inner) = type_str.strip_prefix("Maybe") {
+        let inner = inner.trim();
+        let inner_type = parse_haskell_type(inner)?;
+        return Ok(Type::Maybe(Box::new(inner_type)));
+    }
+
     match type_str {
         "Int8" => Ok(Type::Int8),
         "Int16" => Ok(Type::Int16),

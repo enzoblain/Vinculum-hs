@@ -1,22 +1,8 @@
 use std::path::PathBuf;
 use std::{env, fs};
 
-use crate::build_scripts::parser::types::Function;
-
-fn to_snake_case(s: &str) -> String {
-    let mut result = String::new();
-
-    for (i, ch) in s.chars().enumerate() {
-        if ch.is_uppercase() && i > 0 {
-            result.push('_');
-            result.push_str(&ch.to_lowercase().to_string());
-        } else {
-            result.push(ch.to_lowercase().next().unwrap_or(ch));
-        }
-    }
-
-    result
-}
+use crate::build_scripts::parser::types::{Function, Type};
+use crate::build_scripts::utils::to_snake_case;
 
 pub(crate) fn generate_functions_with_modules(file_modules: &[(String, Vec<Function>)]) {
     let manifest_dir =
@@ -63,19 +49,43 @@ fn generate_function(function: &Function, module_name: &str) -> String {
         .join(", ");
 
     let return_type = function.r#return.rust_type();
-    let converter = function.r#return.return_converter();
+    let result_conversion = generate_result_conversion(&function.r#return);
     let qualified_name = format!("{}_{}", to_snake_case(module_name), function.name);
 
     format!(
-        "pub fn {name}({args_sig}) -> {return_type} {{
+        "#[allow(non_snake_case, unused_variables, unused_qualifications, dead_code)]
+pub fn {name}({args_sig}) -> {return_type} {{
     let result = call_haskell_typed(\"{qualified_name}\", &[{args_values}]);
-    result.{converter}()
+    {result_conversion}
 }}",
         name = function.name,
         args_sig = args_sig,
         return_type = return_type,
         qualified_name = qualified_name,
         args_values = args_values,
-        converter = converter,
+        result_conversion = result_conversion,
+    )
+}
+
+fn generate_result_conversion(ty: &Type) -> String {
+    match ty {
+        Type::Maybe(inner) => {
+            let inner_converter = generate_option_value_converter(inner);
+            format!(
+                "result.into_option().and_then(|val| {{ {} }})",
+                inner_converter
+            )
+        }
+        _ => {
+            let converter = ty.return_converter();
+            format!("result.{}()", converter)
+        }
+    }
+}
+
+fn generate_option_value_converter(ty: &Type) -> String {
+    format!(
+        "if let {} = *val {{ Some(x) }} else {{ None }}",
+        ty.rust_value_ctor("x")
     )
 }

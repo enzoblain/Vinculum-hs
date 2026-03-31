@@ -13,12 +13,7 @@ license-file = "../../LICENSE"
 keywords = ["haskell", "ffi", "interop", "bindings", "ghc"]
 categories = ["api-bindings", "development-tools::ffi"]
 
-include = [
-    "src/**/*",
-    "build_scripts/**/*",
-    "../../README.md",
-    "../../LICENSE",
-]
+include = ["src/**/*", "build_scripts/**/*", "../../README.md", "../../LICENSE"]
 
 [lib]
 name = "vinculum_hs"
@@ -34,3 +29,7 @@ default = []
 [[example]]
 name = "math"
 path = "../../examples/math.rs"
+
+[[example]]
+name = "tools"
+path = "../../examples/tools.rs"

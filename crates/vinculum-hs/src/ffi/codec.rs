@@ -198,6 +198,20 @@ impl Value {
             .expect("internal FFI type error: expected Value::Bytes")
     }
 
+    #[allow(dead_code)]
+    pub(crate) fn try_into_option(self) -> Result<Option<Box<Value>>, FfiError> {
+        match self {
+            Value::Option(value) => Ok(value),
+            _ => Err(FfiError::DecodeError),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn into_option(self) -> Option<Box<Value>> {
+        self.try_into_option()
+            .expect("internal FFI type error: expected Value::Option")
+    }
+
     pub(crate) fn to_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
 
@@ -261,6 +275,18 @@ impl Value {
                 buf.push(13);
                 buf.extend_from_slice(&(b.len() as u64).to_le_bytes());
                 buf.extend_from_slice(b);
+            }
+            Value::Option(opt) => {
+                buf.push(14);
+                match opt {
+                    Some(inner) => {
+                        buf.push(1);
+                        buf.extend_from_slice(&inner.to_bytes());
+                    }
+                    None => {
+                        buf.push(0);
+                    }
+                }
             }
         }
 
@@ -417,6 +443,26 @@ impl Value {
                 }
 
                 Ok(Value::Bytes(bytes[9..9 + len].to_vec()))
+            }
+            14 => {
+                if bytes.len() < 2 {
+                    return Err(FfiError::UnexpectedEof);
+                }
+
+                let option_tag = bytes[1];
+                match option_tag {
+                    0 => Ok(Value::Option(None)),
+                    1 => {
+                        if bytes.len() < 3 {
+                            return Err(FfiError::UnexpectedEof);
+                        }
+
+                        let inner = Self::from_bytes_checked(&bytes[2..])?;
+
+                        Ok(Value::Option(Some(Box::new(inner))))
+                    }
+                    _ => Err(FfiError::InvalidTag(option_tag)),
+                }
             }
             _ => Err(FfiError::InvalidTag(tag)),
         }

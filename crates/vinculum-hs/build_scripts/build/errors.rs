@@ -46,6 +46,7 @@ impl fmt::Display for BuildValidationError {
 
 impl std::error::Error for BuildValidationError {}
 
+#[allow(clippy::enum_variant_names)]
 #[derive(Debug)]
 pub enum ConfigLoadError {
     HaskellDirNotFound,

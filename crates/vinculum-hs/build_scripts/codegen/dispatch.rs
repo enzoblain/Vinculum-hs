@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::build_scripts::parser::types::{Function, Type};
+use crate::build_scripts::utils::to_snake_case;
 
 pub(crate) fn generate_haskell_dispatch(
     file_modules: &[(String, Vec<Function>)],
@@ -48,7 +49,7 @@ fn generate_dispatch_branch(function: &Function, module_name: &str) -> String {
         .collect::<Vec<_>>()
         .join(" ");
 
-    let qualified_name = format!("{}_{}", module_name.to_lowercase(), function.name);
+    let qualified_name = format!("{}_{}", to_snake_case(module_name), function.name);
 
     let function_call = if call_args.is_empty() {
         qualified_name.clone()
@@ -90,25 +91,47 @@ impl Type {
             Type::Char => format!("VChar {}", name),
             Type::String => format!("VString {}", name),
             Type::Bytes => format!("VBytes {}", name),
+            Type::Maybe(_) => format!("VOption {}", name),
         }
     }
 
-    pub(crate) fn haskell_encoder(&self) -> &'static str {
+    pub(crate) fn haskell_value_constructor(&self) -> String {
         match self {
-            Type::Int8 => "encodeInt8",
-            Type::Int16 => "encodeInt16",
-            Type::Int32 => "encodeInt32",
-            Type::Int64 => "encodeInt64",
-            Type::Word8 => "encodeWord8",
-            Type::Word16 => "encodeWord16",
-            Type::Word32 => "encodeWord32",
-            Type::Word64 => "encodeWord64",
-            Type::Float32 => "encodeFloat32",
-            Type::Float64 => "encodeFloat64",
-            Type::Bool => "encodeBool",
-            Type::Char => "encodeChar",
-            Type::String => "encodeString",
-            Type::Bytes => "encodeBytes",
+            Type::Int8 => "VInt8".to_string(),
+            Type::Int16 => "VInt16".to_string(),
+            Type::Int32 => "VInt32".to_string(),
+            Type::Int64 => "VInt64".to_string(),
+            Type::Word8 => "VWord8".to_string(),
+            Type::Word16 => "VWord16".to_string(),
+            Type::Word32 => "VWord32".to_string(),
+            Type::Word64 => "VWord64".to_string(),
+            Type::Float32 => "VFloat32".to_string(),
+            Type::Float64 => "VFloat64".to_string(),
+            Type::Bool => "VBool".to_string(),
+            Type::Char => "VChar".to_string(),
+            Type::String => "VString".to_string(),
+            Type::Bytes => "VBytes".to_string(),
+            Type::Maybe(_) => unreachable!("Maybe should not be used as a value constructor"),
+        }
+    }
+
+    pub(crate) fn haskell_encoder(&self) -> String {
+        match self {
+            Type::Int8 => "encodeInt8".to_string(),
+            Type::Int16 => "encodeInt16".to_string(),
+            Type::Int32 => "encodeInt32".to_string(),
+            Type::Int64 => "encodeInt64".to_string(),
+            Type::Word8 => "encodeWord8".to_string(),
+            Type::Word16 => "encodeWord16".to_string(),
+            Type::Word32 => "encodeWord32".to_string(),
+            Type::Word64 => "encodeWord64".to_string(),
+            Type::Float32 => "encodeFloat32".to_string(),
+            Type::Float64 => "encodeFloat64".to_string(),
+            Type::Bool => "encodeBool".to_string(),
+            Type::Char => "encodeChar".to_string(),
+            Type::String => "encodeString".to_string(),
+            Type::Bytes => "encodeBytes".to_string(),
+            Type::Maybe(inner) => format!("encodeOptionWith {}", inner.haskell_value_constructor()),
         }
     }
 }

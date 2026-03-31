@@ -6,7 +6,7 @@ mod build_scripts;
 use build_scripts::build::{compiler, config, linker, validator};
 use build_scripts::codegen::{dispatch, functions as codegen_functions};
 use build_scripts::parser::parse;
-use build_scripts::utils::capitalize_first;
+use build_scripts::utils::{capitalize_first, to_snake_case};
 
 fn main() {
     let config = config::load_config()
@@ -76,7 +76,7 @@ fn main() {
             ));
 
             for function in functions {
-                let qualified_name = format!("{}_{}", module_name.to_lowercase(), function.name);
+                let qualified_name = format!("{}_{}", to_snake_case(module_name), function.name);
                 exports.push(qualified_name.clone());
                 wrappers.push(format!(
                     "{} = {}.{}",

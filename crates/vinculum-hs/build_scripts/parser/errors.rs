@@ -6,6 +6,7 @@ pub(crate) enum ConfigError {
     NoFunctionsDefined,
     EmptyFunctionName,
     EmptyArgumentName { function: String },
+    ValidationError(String),
 }
 
 impl fmt::Display for ConfigError {
@@ -23,6 +24,9 @@ impl fmt::Display for ConfigError {
                     "configuration error: argument name cannot be empty in function '{}'",
                     function
                 )
+            }
+            ConfigError::ValidationError(msg) => {
+                write!(f, "configuration error: {}", msg)
             }
         }
     }
