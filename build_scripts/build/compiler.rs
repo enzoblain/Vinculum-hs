@@ -24,7 +24,7 @@ pub(super) fn find_rts_dir() -> String {
         let out = String::from_utf8_lossy(&output.stdout);
         for line in out.lines() {
             let path_str = if line.contains("library-dirs:") {
-                line.splitn(2, ':').nth(1).unwrap_or("").trim()
+                line.split_once(':').map(|x| x.1).unwrap_or("").trim()
             } else {
                 line.trim()
             };

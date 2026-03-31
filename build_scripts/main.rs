@@ -23,7 +23,7 @@ pub(crate) fn run() {
 
     let haskell_dir = Path::new(&config.haskell_dir);
     let c_dir = Path::new(&config.c_dir);
-    let user_functions_path = Path::new(&config.user_functions_file);
+    let user_functions_path = Path::new(&config.functions_file);
     generate_haskell_dispatch(&functions, haskell_dir);
 
     let lib_path = Path::new(&config.lib_dir);
@@ -61,7 +61,7 @@ pub(crate) fn run() {
     );
     println!(
         "cargo:rerun-if-changed={}",
-        Path::new(&config.user_functions_file).display()
+        Path::new(&config.functions_file).display()
     );
 
     for function in &functions {

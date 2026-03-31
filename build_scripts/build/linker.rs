@@ -26,6 +26,6 @@ pub(crate) fn emit_rerun_instructions(functions_file: &str) {
     println!("cargo:rerun-if-env-changed=HASKELL_LIB_DIR");
     println!("cargo:rerun-if-env-changed=HASKELL_LIB_FILE");
     println!("cargo:rerun-if-env-changed=HASKELL_RTS_LIB");
-    println!("cargo:rerun-if-env-changed=HASKELL_FUNCTIONS_FILE");
+    println!("cargo:rerun-if-env-changed=HASKELL_FILE");
     println!("cargo:rerun-if-changed={}", functions_file);
 }

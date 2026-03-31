@@ -1,7 +1,0 @@
-[[function]]
-name = "add"
-args = [
-    { name = "a", type = "Int64" },
-    { name = "b", type = "Int64" }
-]
-return = "Int64"
