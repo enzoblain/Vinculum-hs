@@ -32,5 +32,5 @@ vinculum-hs-macros = { version = "0.1.0", path = "../vinculum-hs-macros" }
 default = []
 
 [[example]]
-name = "add"
-path = "../../examples/add/main.rs"
+name = "math"
+path = "../../examples/math.rs"

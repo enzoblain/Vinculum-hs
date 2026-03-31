@@ -42,7 +42,7 @@ fn find_haskell_dir(workspace_root: &str) -> Result<String, ConfigLoadError> {
         }
     }
 
-    let fallback = Path::new(workspace_root).join("examples").join("add");
+    let fallback = Path::new(workspace_root).join("examples").join("haskell");
     if fallback.exists() && fallback.is_dir() {
         return Ok(fallback.to_string_lossy().to_string());
     }

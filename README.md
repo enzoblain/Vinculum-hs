@@ -40,20 +40,17 @@ Suppose you have a Haskell module with a few arithmetic functions:
 ```haskell
 module Math where
 
--- Exported to Rust via Vinculum
-foreign export ccall math_add :: Int -> Int -> Int
-foreign export ccall math_multiply :: Int -> Int -> Int
-foreign export ccall math_factorial :: Int -> Int
+import Data.Int
 
-math_add :: Int -> Int -> Int
-math_add a b = a + b
+add :: Int64 -> Int64 -> Int64
+add a b = a + b
 
-math_multiply :: Int -> Int -> Int
-math_multiply a b = a * b
+multiply :: Int64 -> Int64 -> Int64
+multiply a b = a * b
 
-math_factorial :: Int -> Int
-math_factorial 0 = 1
-math_factorial n = n * math_factorial (n - 1)
+factorial :: Int64 -> Int64
+factorial 0 = 1
+factorial n = n * factorial (n - 1)
 ```
 
 Vinculum reads the module, generates type-safe Rust wrappers, and makes them available under
@@ -62,19 +59,23 @@ Vinculum reads the module, generates type-safe Rust wrappers, and makes them ava
 **`main.rs`**
 
 ```rust
-use vinculum::functions::math;
+use vinculum_hs::functions::math::{add, factorial, multiply};
 
-#[vinculum::main(haskell_directory = "haskell/")]
+#[vinculum_hs::main(haskell_directory = "examples/haskell")]
 fn main() {
-    // Direct calls into Haskell — fully type-checked at compile time
-    let sum = math::add(12, 30);        // 42
-    let product = math::multiply(6, 7);     // 42
-    let fact = math::factorial(10);      // 3628800
+    let a = 5;
+    let b = 10;
 
-    println!("add(12, 30)      = {sum}");
-    println!("multiply(6, 7)   = {product}");
-    println!("factorial(10)    = {fact}");
+    let result = add(a, b);
+    println!("{a} + {b} = {result}");
+
+    let result = multiply(a, b);
+    println!("{a} * {b} = {result}");
+
+    let result = factorial(a);
+    println!("Factorial a = {result}");
 }
+
 ```
 
 **Output:**
