@@ -131,10 +131,31 @@ vinculum-hs = "*"
 
 ### Run the example
 
+To run an example, specify the Haskell source directory via the `HASKELL_DIR` environment variable:
+
 ```bash
 git clone https://github.com/enzoblain/Vinculum
 cd Vinculum
-cargo run --example math
+HASKELL_DIR=examples/haskell cargo run --example math
+```
+
+### Configuring Haskell directories for your application
+
+You can specify the Haskell source directory in two ways:
+
+#### Option 1: Environment variable (recommended for examples)
+Set `HASKELL_DIR` when running:
+```bash
+HASKELL_DIR=path/to/haskell cargo run
+HASKELL_DIR=path/to/haskell cargo run --example my_example
+```
+
+#### Option 2: Cargo.toml metadata (for libraries and applications)
+Add a `[package.metadata.vinculum]` section to your `Cargo.toml`:
+
+```toml
+[package.metadata.vinculum]
+haskell_directory = "src/haskell"
 ```
 
 ### Development setup

@@ -1,4 +1,5 @@
 use std::env;
+use std::fs;
 use std::path::Path;
 
 use super::errors::ConfigLoadError;
@@ -13,36 +14,55 @@ pub struct BuildConfig {
     pub functions_dir: String,
 }
 
+fn read_haskell_dir_from_cargo_toml(manifest_path: &Path, bin_name: &str) -> Option<String> {
+    let content = fs::read_to_string(manifest_path).ok()?;
+
+    let section_header = format!("[package.metadata.vinculum.examples.{}]", bin_name);
+    if let Some(metadata_start) = content.find(&section_header) {
+        let metadata_section = &content[metadata_start..];
+
+        for line in metadata_section.lines() {
+            if line.starts_with("haskell_directory")
+                && let Some(start) = line.find('"')
+                && let Some(end) = line.rfind('"')
+                && end > start
+            {
+                let value = &line[start + 1..end];
+                return Some(value.to_string());
+            }
+
+            if line.starts_with('[') && !line.starts_with(&section_header) {
+                break;
+            }
+        }
+    }
+
+    None
+}
+
 fn find_haskell_dir(workspace_root: &str) -> Result<String, ConfigLoadError> {
     if let Ok(dir) = env::var("HASKELL_DIR") {
         return Ok(dir);
     }
 
-    let examples_dir = Path::new(workspace_root).join("examples");
+    let manifest_path = Path::new(workspace_root)
+        .join("crates")
+        .join("vinculum-hs")
+        .join("Cargo.toml");
 
-    if examples_dir.exists()
-        && let Ok(entries) = std::fs::read_dir(&examples_dir)
+    if let Ok(bin_name) = env::var("CARGO_BIN_NAME")
+        && let Some(dir) = read_haskell_dir_from_cargo_toml(&manifest_path, &bin_name)
     {
-        for entry in entries.flatten() {
-            let path = entry.path();
-
-            if path.is_dir()
-                && let Ok(subentries) = std::fs::read_dir(&path)
-            {
-                for subentry in subentries.flatten() {
-                    let subpath = subentry.path();
-
-                    if subpath.is_file()
-                        && subpath.extension().and_then(|s| s.to_str()) == Some("hs")
-                    {
-                        return Ok(path.to_string_lossy().to_string());
-                    }
-                }
-            }
+        let full_path = Path::new(workspace_root).join(&dir);
+        if full_path.exists() && full_path.is_dir() {
+            return Ok(full_path.to_string_lossy().to_string());
         }
     }
 
-    let fallback = Path::new(workspace_root).join("examples").join("haskell");
+    let fallback = Path::new(workspace_root)
+        .join("crates")
+        .join("vinculum-hs")
+        .join("haskell_fallback");
     if fallback.exists() && fallback.is_dir() {
         return Ok(fallback.to_string_lossy().to_string());
     }

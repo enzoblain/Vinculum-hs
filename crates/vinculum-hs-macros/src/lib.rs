@@ -2,35 +2,11 @@ extern crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{parse, parse_macro_input, ExprLit, ItemFn, Lit, LitStr, MetaNameValue};
+use syn::{ItemFn, parse_macro_input};
 
 #[proc_macro_attribute]
-pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
+pub fn main(_args: TokenStream, item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as ItemFn);
-
-    let haskell_folder = if !args.is_empty() {
-        if let Ok(meta) = parse::<MetaNameValue>(args.clone()) {
-            if meta.path.is_ident("haskell_directory") {
-                if let syn::Expr::Lit(ExprLit {
-                    lit: Lit::Str(lit_str),
-                    ..
-                }) = &meta.value
-                {
-                    Some(lit_str.value())
-                } else {
-                    None
-                }
-            } else {
-                None
-            }
-        } else if let Ok(lit) = parse::<LitStr>(args) {
-            Some(lit.value())
-        } else {
-            None
-        }
-    } else {
-        None
-    };
 
     let ItemFn {
         attrs,
@@ -39,39 +15,12 @@ pub fn main(args: TokenStream, item: TokenStream) -> TokenStream {
         block,
     } = input;
 
-    let expanded = if let Some(dir_path) = haskell_folder {
-        quote! {
-            #(#attrs)*
-            #vis #sig {
-                const WORKSPACE_ROOT: &str = env!("CARGO_MANIFEST_DIR");
-
-                let full_dir = {
-                    let root = std::path::Path::new(WORKSPACE_ROOT);
-                    let workspace = root.parent()
-                        .and_then(|p| p.parent())
-                        .unwrap_or(root);
-                    let dir = workspace.join(#dir_path);
-                    dir.canonicalize()
-                        .ok()
-                        .and_then(|p| p.to_str().map(|s| s.to_string()))
-                        .unwrap_or_else(|| dir.to_string_lossy().to_string())
-                };
-
-                unsafe { std::env::set_var("HASKELL_DIR", full_dir); }
-
-                vinculum_hs::runtime::init();
-                #block
-                vinculum_hs::runtime::shutdown();
-            }
-        }
-    } else {
-        quote! {
-            #(#attrs)*
-            #vis #sig {
-                vinculum_hs::runtime::init();
-                #block
-                vinculum_hs::runtime::shutdown();
-            }
+    let expanded = quote! {
+        #(#attrs)*
+        #vis #sig {
+            vinculum_hs::runtime::init();
+            #block
+            vinculum_hs::runtime::shutdown();
         }
     };
 
