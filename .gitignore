@@ -54,4 +54,3 @@ coverage/
 result
 
 Dispatch.hs
-crates/vinculum-hs/src/functions.rs
