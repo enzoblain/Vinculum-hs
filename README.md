@@ -28,6 +28,7 @@ single attribute macro sets up the runtime, and a build script generates the bin
 | **Single macro**       | `#[vinculum::main]` handles runtime initialization            |
 | **Transparent builds** | Haskell compilation is orchestrated via Cargo                 |
 | **Minimal overhead**   | Direct FFI calls over the C ABI                               |
+| **IDE-friendly** | Compile-time generated bindings enable full IDE support: autocompletion, type checking, navigation, and inline documentation |
 
 ---
 
@@ -61,7 +62,7 @@ Vinculum reads the module, generates type-safe Rust wrappers, and makes them ava
 ```rust
 use vinculum_hs::functions::math::{add, factorial, multiply};
 
-#[vinculum_hs::main(haskell_directory = "examples/haskell")]
+#[vinculum_hs::main]
 fn main() {
     let a = 5;
     let b = 10;
@@ -85,6 +86,11 @@ add(12, 30)      = 42
 multiply(6, 7)   = 42
 factorial(10)    = 3628800
 ```
+
+> **Configuration required:** You must specify where your Haskell files are located, either via:
+> - **Environment variable** (for development): `HASKELL_DIR=path/to/haskell cargo run`
+> - **Cargo.toml metadata** (for production): See [Configuring Haskell directories](#configuring-haskell-directories-for-your-application) below
+
 
 No `unsafe` blocks. No manual `extern "C"` declarations. No FFI plumbing.
 
@@ -118,16 +124,28 @@ No `unsafe` blocks. No manual `extern "C"` declarations. No FFI plumbing.
 
 ### Requirements
 
-- Rust 1.56+
+- Rust 1.93+
 - GHC 9.0+ with Cabal
-- Linux or macOS
+- Linux / MacOS / Windows
 
 ### Installation
 
+Add to your `Cargo.toml`:
+
 ```toml
 [dependencies]
-vinculum-hs = "*"
+vinculum-hs = "0.1"
+
+[package.metadata.vinculum]
+haskell_directory = "src/haskell"  # Path to your Haskell modules
 ```
+
+Or use the `HASKELL_DIR` environment variable at runtime:
+```bash
+HASKELL_DIR=src/haskell cargo run
+```
+
+---
 
 ### Run the example
 
@@ -139,24 +157,7 @@ cd Vinculum
 HASKELL_DIR=examples/haskell cargo run --example math
 ```
 
-### Configuring Haskell directories for your application
-
-You can specify the Haskell source directory in two ways:
-
-#### Option 1: Environment variable (recommended for examples)
-Set `HASKELL_DIR` when running:
-```bash
-HASKELL_DIR=path/to/haskell cargo run
-HASKELL_DIR=path/to/haskell cargo run --example my_example
-```
-
-#### Option 2: Cargo.toml metadata (for libraries and applications)
-Add a `[package.metadata.vinculum]` section to your `Cargo.toml`:
-
-```toml
-[package.metadata.vinculum]
-haskell_directory = "src/haskell"
-```
+---
 
 ### Development setup
 
@@ -178,28 +179,6 @@ git update-index --no-skip-worktree crates/vinculum-hs/src/functions.rs
 
 ---
 
-## Project structure
-
-```
-vinculum/
-├── crates/
-│   ├── vinculum/               # Core framework
-│   │   ├── src/
-│   │   │   ├── lib.rs          # Public API
-│   │   │   ├── functions.rs    # Auto-generated bindings
-│   │   │   ├── runtime.rs      # Haskell RTS management
-│   │   │   └── ffi/            # FFI layer
-│   │   └── build_scripts/      # Build orchestration
-│   └── vinculum-macros/        # #[vinculum::main] macro
-├── examples/
-│   └── math/
-│       ├── main.rs
-│       └── Math.hs
-└── Cargo.toml
-```
-
----
-
 ## Roadmap
 
 - [x] Automatic binding generation from Haskell modules
@@ -217,11 +196,14 @@ vinculum/
 
 ## Contributing
 
-Contributions are welcome. Areas of interest: type marshalling, error handling, performance, documentation, and test
-infrastructure.
+Contributions are welcome and appreciated.  
+Feel free to open an issue to discuss changes or submit a pull request directly.
+
+Please ensure that your contributions align with the project's goals and maintain code quality and consistency.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+This project is licensed under the MIT License.  
+See the [LICENSE](LICENSE) file for details.
