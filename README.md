@@ -137,6 +137,24 @@ cd Vinculum
 cargo run --example math
 ```
 
+### Development setup
+
+**Important:** The `crates/vinculum-hs/src/functions.rs` file is auto-generated during build. To prevent Git
+conflicts and accidental commits of generated code, mark it as skip-worktree:
+
+```bash
+git update-index --skip-worktree crates/vinculum-hs/src/functions.rs
+```
+
+This tells Git to ignore local changes to the file while keeping it under version control. The file will be
+regenerated automatically whenever you rebuild the project (`cargo build` or `cargo run`).
+
+To restore tracking if needed:
+
+```bash
+git update-index --no-skip-worktree crates/vinculum-hs/src/functions.rs
+```
+
 ---
 
 ## Project structure
