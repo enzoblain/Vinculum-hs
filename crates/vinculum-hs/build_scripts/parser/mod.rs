@@ -1,4 +1,10 @@
+mod args;
+mod comments;
+mod core;
 mod errors;
-pub(crate) mod parse;
-pub(crate) mod types;
-pub(crate) mod validator;
+mod functions;
+mod types;
+mod utils;
+
+pub(crate) use core::extract_functions;
+pub(crate) use functions::Function;

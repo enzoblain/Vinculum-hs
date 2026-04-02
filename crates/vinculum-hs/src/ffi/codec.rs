@@ -170,62 +170,6 @@ impl Value {
             .expect("internal FFI type error: expected Value::Char")
     }
 
-    #[allow(dead_code)]
-    pub(crate) fn try_into_string(self) -> Result<String, FfiError> {
-        match self {
-            Value::String(value) => Ok(value),
-            _ => Err(FfiError::DecodeError),
-        }
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn into_string(self) -> String {
-        self.try_into_string()
-            .expect("internal FFI type error: expected Value::String")
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn try_into_bytes(self) -> Result<Vec<u8>, FfiError> {
-        match self {
-            Value::Bytes(value) => Ok(value),
-            _ => Err(FfiError::DecodeError),
-        }
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn into_bytes(self) -> Vec<u8> {
-        self.try_into_bytes()
-            .expect("internal FFI type error: expected Value::Bytes")
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn try_into_option(self) -> Result<Option<Box<Value>>, FfiError> {
-        match self {
-            Value::Option(value) => Ok(value),
-            _ => Err(FfiError::DecodeError),
-        }
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn into_option(self) -> Option<Box<Value>> {
-        self.try_into_option()
-            .expect("internal FFI type error: expected Value::Option")
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn try_into_vec(self) -> Result<Vec<Value>, FfiError> {
-        match self {
-            Value::Vec(value) => Ok(value),
-            _ => Err(FfiError::DecodeError),
-        }
-    }
-
-    #[allow(dead_code)]
-    pub(crate) fn into_vec(self) -> Vec<Value> {
-        self.try_into_vec()
-            .expect("internal FFI type error: expected Value::Vec")
-    }
-
     pub(crate) fn to_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
 
@@ -278,36 +222,6 @@ impl Value {
                 buf.push(11);
                 let code = *c as u32;
                 buf.extend_from_slice(&code.to_le_bytes());
-            }
-            Value::String(s) => {
-                buf.push(12);
-                let bytes = s.as_bytes();
-                buf.extend_from_slice(&(bytes.len() as u64).to_le_bytes());
-                buf.extend_from_slice(bytes);
-            }
-            Value::Bytes(b) => {
-                buf.push(13);
-                buf.extend_from_slice(&(b.len() as u64).to_le_bytes());
-                buf.extend_from_slice(b);
-            }
-            Value::Option(opt) => {
-                buf.push(14);
-                match opt {
-                    Some(inner) => {
-                        buf.push(1);
-                        buf.extend_from_slice(&inner.to_bytes());
-                    }
-                    None => {
-                        buf.push(0);
-                    }
-                }
-            }
-            Value::Vec(values) => {
-                buf.push(15);
-                buf.extend_from_slice(&(values.len() as u64).to_le_bytes());
-                for value in values {
-                    buf.extend_from_slice(&value.to_bytes());
-                }
             }
         }
 
@@ -434,80 +348,6 @@ impl Value {
                 char::from_u32(code)
                     .map(Value::Char)
                     .ok_or(FfiError::InvalidChar(code))
-            }
-            12 => {
-                if bytes.len() < 9 {
-                    return Err(FfiError::UnexpectedEof);
-                }
-                let mut len_bytes = [0u8; 8];
-                len_bytes.copy_from_slice(&bytes[1..9]);
-                let len = u64::from_le_bytes(len_bytes) as usize;
-
-                if bytes.len() < 9 + len {
-                    return Err(FfiError::UnexpectedEof);
-                }
-
-                let s = String::from_utf8(bytes[9..9 + len].to_vec())
-                    .map_err(|_| FfiError::InvalidUtf8)?;
-                Ok(Value::String(s))
-            }
-            13 => {
-                if bytes.len() < 9 {
-                    return Err(FfiError::UnexpectedEof);
-                }
-                let mut len_bytes = [0u8; 8];
-                len_bytes.copy_from_slice(&bytes[1..9]);
-                let len = u64::from_le_bytes(len_bytes) as usize;
-
-                if bytes.len() < 9 + len {
-                    return Err(FfiError::UnexpectedEof);
-                }
-
-                Ok(Value::Bytes(bytes[9..9 + len].to_vec()))
-            }
-            14 => {
-                if bytes.len() < 2 {
-                    return Err(FfiError::UnexpectedEof);
-                }
-
-                let option_tag = bytes[1];
-                match option_tag {
-                    0 => Ok(Value::Option(None)),
-                    1 => {
-                        if bytes.len() < 3 {
-                            return Err(FfiError::UnexpectedEof);
-                        }
-
-                        let inner = Self::from_bytes_checked(&bytes[2..])?;
-
-                        Ok(Value::Option(Some(Box::new(inner))))
-                    }
-                    _ => Err(FfiError::InvalidTag(option_tag)),
-                }
-            }
-            15 => {
-                if bytes.len() < 9 {
-                    return Err(FfiError::UnexpectedEof);
-                }
-
-                let mut len_bytes = [0u8; 8];
-                len_bytes.copy_from_slice(&bytes[1..9]);
-                let vec_len = u64::from_le_bytes(len_bytes) as usize;
-
-                let mut values = Vec::new();
-                let mut pos = 9;
-
-                for _ in 0..vec_len {
-                    if pos >= bytes.len() {
-                        return Err(FfiError::UnexpectedEof);
-                    }
-                    let value = Self::from_bytes_checked(&bytes[pos..])?;
-                    let encoded = value.to_bytes();
-                    pos += encoded.len();
-                    values.push(value);
-                }
-
-                Ok(Value::Vec(values))
             }
             _ => Err(FfiError::InvalidTag(tag)),
         }

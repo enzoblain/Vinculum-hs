@@ -1,6 +1,6 @@
 use vinculum_hs::functions::math::{add, factorial, multiply};
 
-#[vinculum_hs::main(haskell_directory = "examples/haskell")]
+#[vinculum_hs::main]
 fn main() {
     let a = 5;
     let b = 10;
@@ -13,4 +13,6 @@ fn main() {
 
     let result = factorial(a);
     println!("Factorial 5 = {result}");
+
+    add(4, 5);
 }

@@ -1,7 +1,7 @@
 use std::path::Path;
 
-use super::config::BuildConfig;
 use super::errors::BuildValidationError;
+use crate::build_scripts::utils::config::BuildConfig;
 
 pub(crate) fn validate_library_dir(path: &Path) -> Result<(), BuildValidationError> {
     if !path.exists() {

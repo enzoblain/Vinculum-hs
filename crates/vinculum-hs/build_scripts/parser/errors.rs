@@ -1,70 +1,81 @@
-use std::fmt;
+use std::error;
+use std::fmt::{Display, Formatter, Result as FmtResult};
+use std::io;
 use std::path::PathBuf;
-
-#[derive(Debug)]
-pub(crate) enum ConfigError {
-    NoFunctionsDefined,
-    EmptyFunctionName,
-    EmptyArgumentName { function: String },
-    ValidationError(String),
-}
-
-impl fmt::Display for ConfigError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ConfigError::NoFunctionsDefined => {
-                write!(f, "configuration error: no functions defined")
-            }
-            ConfigError::EmptyFunctionName => {
-                write!(f, "configuration error: function name cannot be empty")
-            }
-            ConfigError::EmptyArgumentName { function } => {
-                write!(
-                    f,
-                    "configuration error: argument name cannot be empty in function '{}'",
-                    function
-                )
-            }
-            ConfigError::ValidationError(msg) => {
-                write!(f, "configuration error: {}", msg)
-            }
-        }
-    }
-}
-
-impl std::error::Error for ConfigError {}
 
 #[derive(Debug)]
 pub(crate) enum ParseError {
     ReadFile {
         path: PathBuf,
-        source: std::io::Error,
+        source: io::Error,
     },
-    InvalidSignature(String),
-    UnknownType(String),
-    Validation(ConfigError),
+    EmptySignature,
+    InvalidFunctionName {
+        name: String,
+        signature: String,
+    },
+    ReservedRustKeyword {
+        name: String,
+    },
+    UnsupportedHaskellType(String),
+    MissingHaskellTypeAnnotation {
+        signature: String,
+    },
+    MissingReturnHaskellType {
+        signature: String,
+    },
+    ArgumentCountMismatch {
+        expected: usize,
+        found: usize,
+        signature: String,
+    },
 }
 
-impl fmt::Display for ParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl Display for ParseError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         match self {
             ParseError::ReadFile { path, source } => {
+                write!(f, "failed to read file '{}': {}", path.display(), source)
+            }
+            ParseError::EmptySignature => {
+                write!(f, "empty function signature")
+            }
+            ParseError::InvalidFunctionName { name, signature } => {
                 write!(
                     f,
-                    "failed to read Haskell file '{}': {}",
-                    path.display(),
-                    source
+                    "invalid function name `{}` in signature `{}` (not a valid Rust identifier)",
+                    name, signature
                 )
             }
-            ParseError::InvalidSignature(signature) => {
-                write!(f, "invalid Haskell signature: {}", signature)
+            ParseError::ReservedRustKeyword { name } => {
+                write!(f, "name `{}` is a reserved Rust keyword", name)
             }
-            ParseError::UnknownType(ty) => {
-                write!(f, "unknown Haskell type: {}", ty)
+            ParseError::UnsupportedHaskellType(t) => {
+                write!(f, "unsupported type `{}`", t)
             }
-            ParseError::Validation(err) => write!(f, "{err}"),
+            ParseError::MissingHaskellTypeAnnotation { signature } => {
+                write!(
+                    f,
+                    "missing type annotation in signature `{}` (expected `::`)",
+                    signature
+                )
+            }
+            ParseError::MissingReturnHaskellType { signature } => {
+                write!(f, "missing return type in signature `{}`", signature)
+            }
+            ParseError::ArgumentCountMismatch {
+                expected,
+                found,
+                signature,
+            } => {
+                write!(
+                    f,
+                    "argument count mismatch in `{}`: expected {}, found {}",
+                    signature, expected, found
+                )
+            }
         }
     }
 }
 
-impl std::error::Error for ParseError {}
+impl error::Error for ParseError {}
