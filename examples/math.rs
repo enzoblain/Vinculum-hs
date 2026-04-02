@@ -13,4 +13,6 @@ fn main() {
 
     let result = factorial(a);
     println!("Factorial 5 = {result}");
+
+    add(4, 5);
 }

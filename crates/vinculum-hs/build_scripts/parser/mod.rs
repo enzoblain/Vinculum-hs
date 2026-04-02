@@ -1,4 +1,7 @@
-mod errors;
-pub(crate) mod parse;
+pub(crate) mod args;
+pub(crate) mod comments;
+pub(crate) mod core;
+pub(crate) mod errors;
+pub(crate) mod functions;
 pub(crate) mod types;
-pub(crate) mod validator;
+pub(crate) mod utils;

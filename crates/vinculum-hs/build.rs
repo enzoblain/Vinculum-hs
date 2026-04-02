@@ -5,7 +5,7 @@ mod build_scripts;
 
 use build_scripts::build::{compiler, config, linker, validator};
 use build_scripts::codegen::{dispatch, functions as codegen_functions};
-use build_scripts::parser::parse;
+use build_scripts::parser::core::extract_functions;
 use build_scripts::utils::{capitalize_first, to_snake_case};
 
 fn main() {
@@ -54,12 +54,12 @@ fn main() {
             fs::copy(&path, &target_file)
                 .unwrap_or_else(|e| panic!("Failed to copy '{}': {}", path.display(), e));
 
-            let file_functions = parse::parse_haskell_functions(&path)
+            let file_functions = extract_functions(&path)
                 .unwrap_or_else(|e| panic!("Failed to parse '{}': {}", path.display(), e));
 
             if !file_functions.is_empty() {
                 let module_name = capitalize_first(file_name);
-                file_modules.push((module_name.clone(), file_functions.clone()));
+                file_modules.push((module_name.clone(), file_functions));
             }
         }
     }

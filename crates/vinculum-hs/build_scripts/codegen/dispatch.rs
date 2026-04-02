@@ -1,7 +1,8 @@
 use std::fs;
 use std::path::Path;
 
-use crate::build_scripts::parser::types::{Function, Type};
+use crate::build_scripts::parser::functions::Function;
+use crate::build_scripts::parser::types::Type;
 use crate::build_scripts::utils::to_snake_case;
 
 pub(crate) fn generate_haskell_dispatch(
@@ -89,31 +90,6 @@ impl Type {
             Type::Float64 => format!("VFloat64 {}", name),
             Type::Bool => format!("VBool {}", name),
             Type::Char => format!("VChar {}", name),
-            Type::String => format!("VString {}", name),
-            Type::Bytes => format!("VBytes {}", name),
-            Type::Maybe(_) => format!("VOption {}", name),
-            Type::Vec(_) => format!("VVec {}", name),
-        }
-    }
-
-    pub(crate) fn haskell_value_constructor(&self) -> String {
-        match self {
-            Type::Int8 => "VInt8".to_string(),
-            Type::Int16 => "VInt16".to_string(),
-            Type::Int32 => "VInt32".to_string(),
-            Type::Int64 => "VInt64".to_string(),
-            Type::Word8 => "VWord8".to_string(),
-            Type::Word16 => "VWord16".to_string(),
-            Type::Word32 => "VWord32".to_string(),
-            Type::Word64 => "VWord64".to_string(),
-            Type::Float32 => "VFloat32".to_string(),
-            Type::Float64 => "VFloat64".to_string(),
-            Type::Bool => "VBool".to_string(),
-            Type::Char => "VChar".to_string(),
-            Type::String => "VString".to_string(),
-            Type::Bytes => "VBytes".to_string(),
-            Type::Maybe(_) => unreachable!("Maybe should not be used as a value constructor"),
-            Type::Vec(_) => unreachable!("Vec should not be used as a value constructor"),
         }
     }
 
@@ -131,10 +107,6 @@ impl Type {
             Type::Float64 => "encodeFloat64".to_string(),
             Type::Bool => "encodeBool".to_string(),
             Type::Char => "encodeChar".to_string(),
-            Type::String => "encodeString".to_string(),
-            Type::Bytes => "encodeBytes".to_string(),
-            Type::Maybe(inner) => format!("encodeOptionWith {}", inner.haskell_value_constructor()),
-            Type::Vec(_) => "encodeVec".to_string(),
         }
     }
 }

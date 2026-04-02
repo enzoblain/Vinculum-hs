@@ -14,8 +14,4 @@ pub(crate) enum Value {
 
     Bool(bool),
     Char(char),
-    String(String),
-    Bytes(Vec<u8>),
-    Option(Option<Box<Value>>),
-    Vec(Vec<Value>),
 }

@@ -29,7 +29,3 @@ default = []
 [[example]]
 name = "math"
 path = "../../examples/math.rs"
-
-[[example]]
-name = "tools"
-path = "../../examples/tools.rs"
