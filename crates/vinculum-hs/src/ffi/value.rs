@@ -1,4 +1,4 @@
-pub(crate) enum Value {
+pub(crate) enum Value<T> {
     Int8(i8),
     Int16(i16),
     Int32(i32),
@@ -14,4 +14,5 @@ pub(crate) enum Value {
 
     Bool(bool),
     Char(char),
+    Generic(T),
 }

@@ -1,8 +1,8 @@
-use std::path::PathBuf;
-use std::{env, fs};
-
 use crate::build_scripts::parser::Function;
 use crate::build_scripts::utils::helpers::to_snake_case;
+
+use std::path::PathBuf;
+use std::{env, fs};
 
 pub(crate) fn generate_functions_with_modules(file_modules: &[(String, Vec<Function>)]) {
     let manifest_dir =
@@ -48,6 +48,16 @@ fn generate_function(function: &Function, module_name: &str) -> String {
         .collect::<Vec<_>>()
         .join(", ");
 
+    let generics = if function.generics.is_empty() {
+        "".to_string()
+    } else {
+        format!(
+            "<{}: 'static>",
+            function.generics.join(": Any + Clone + 'static, ")
+        )
+        .trim_start_matches(", ")
+        .into()
+    };
     let return_type = function.r#return.rust_name();
     let qualified_name = format!("{}_{}", to_snake_case(module_name), function.name);
     let description_comments = function
@@ -59,9 +69,9 @@ fn generate_function(function: &Function, module_name: &str) -> String {
 
     format!(
         "{}#[allow(non_snake_case, unused_variables, unused_qualifications, dead_code)]
-pub fn {name}({args_sig}) -> {return_type} {{
+pub fn {name}{generics}({args_sig}) -> {return_type} {{
     call_haskell_typed(\"{qualified_name}\", &[{args_values}])
-        .try_into().expect(\"internal FFI type error: invalid return type\")
+        .{conversion}.expect(\"internal FFI type error: invalid return type\")
 }}",
         if description_comments.is_empty() {
             String::new()
@@ -69,9 +79,15 @@ pub fn {name}({args_sig}) -> {return_type} {{
             format!("{}\n", description_comments)
         },
         name = function.name,
+        generics = generics,
         args_sig = args_sig,
         return_type = return_type,
         qualified_name = qualified_name,
         args_values = args_values,
+        conversion = if function.r#return.is_generic() {
+            "into_generic()"
+        } else {
+            "try_into()"
+        },
     )
 }

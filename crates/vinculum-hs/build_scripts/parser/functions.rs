@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::mem;
 
 use super::args::Arg;
@@ -6,6 +7,7 @@ use super::types::HaskellType;
 use super::utils::is_rust_keyword;
 
 pub(crate) struct Function {
+    pub(crate) generics: Vec<String>,
     pub(crate) description: Vec<String>,
     pub(crate) name: String,
     pub(crate) args: Vec<Arg>,
@@ -58,11 +60,54 @@ impl TryInto<Function> for FunctionBuffer {
                     signature: signature.clone(),
                 })?;
 
+        let mut generics_order: Vec<String> = Vec::new();
+        let mut generics_set: HashSet<String> = HashSet::new();
+
+        let resolve_generic = |name: &str,
+                               generics_order: &mut Vec<String>,
+                               generics_set: &mut HashSet<String>|
+         -> String {
+            let index = match generics_order.iter().position(|g| g == name) {
+                Some(i) => i,
+                None => {
+                    generics_order.push(name.to_string());
+                    generics_order.len() - 1
+                }
+            };
+            let rust_name = if index == 0 {
+                "T".to_string()
+            } else {
+                format!("T{}", index)
+            };
+            generics_set.insert(rust_name.clone());
+            rust_name
+        };
+
+        let mut return_haskell = HaskellType::try_from(*return_type)?;
+        if let HaskellType::Generic {
+            name,
+            rust_generic_name,
+        } = &mut return_haskell
+        {
+            *rust_generic_name = resolve_generic(name, &mut generics_order, &mut generics_set);
+        }
+
         let args = if self.args.is_empty() {
             arg_types
                 .iter()
                 .enumerate()
-                .map(|(i, t)| Ok(Arg::new(format!("arg{}", i), HaskellType::try_from(*t)?)))
+                .map(|(i, t)| {
+                    let mut ty = HaskellType::try_from(*t)?;
+                    if let HaskellType::Generic {
+                        name,
+                        rust_generic_name,
+                    } = &mut ty
+                    {
+                        *rust_generic_name =
+                            resolve_generic(name, &mut generics_order, &mut generics_set);
+                    }
+                    Ok(Arg::new(format!("arg{}", i), ty))
+                })
                 .collect::<Result<Vec<_>, ParseError>>()?
         } else {
             if self.args.len() != arg_types.len() {
@@ -76,15 +121,27 @@ impl TryInto<Function> for FunctionBuffer {
             self.args
                 .into_iter()
                 .zip(arg_types.iter())
-                .map(|(name, t)| Ok(Arg::new(name, HaskellType::try_from(*t)?)))
+                .map(|(name, t)| {
+                    let mut ty = HaskellType::try_from(*t)?;
+                    if let HaskellType::Generic {
+                        name: gname,
+                        rust_generic_name,
+                    } = &mut ty
+                    {
+                        *rust_generic_name =
+                            resolve_generic(gname, &mut generics_order, &mut generics_set);
+                    }
+                    Ok(Arg::new(name, ty))
+                })
                 .collect::<Result<Vec<_>, ParseError>>()?
         };
 
         Ok(Function {
+            generics: generics_set.into_iter().collect(),
             description: self.description,
             name: name_ref.to_string(),
             args,
-            r#return: HaskellType::try_from(*return_type)?,
+            r#return: return_haskell,
         })
     }
 }

@@ -1,4 +1,4 @@
-use vinculum_hs::functions::math::{add, factorial, multiply};
+use vinculum_hs::functions::math::{add, factorial, multiply, testfn};
 
 #[vinculum_hs::main]
 fn main() {
@@ -14,5 +14,5 @@ fn main() {
     let result = factorial(a);
     println!("Factorial 5 = {result}");
 
-    add(4, 5);
+    println!("{}", testfn(4));
 }

@@ -1,9 +1,10 @@
+use std::any::Any;
 use std::convert::TryFrom;
 
 use crate::ffi::errors::FfiError;
 use crate::ffi::value::Value;
 
-impl Value {
+impl<T: 'static> Value<T> {
     pub(crate) fn to_bytes(&self) -> Vec<u8> {
         let mut buf = Vec::new();
 
@@ -57,13 +58,30 @@ impl Value {
                 let code = *c as u32;
                 buf.extend_from_slice(&code.to_le_bytes());
             }
+            Value::Generic(g) => {
+                let g = g as &dyn Any;
+
+                if let Some(x) = g.downcast_ref::<i8>() {
+                    buf = Value::<()>::Int8(*x).to_bytes();
+                } else if let Some(x) = g.downcast_ref::<i16>() {
+                    buf = Value::<()>::Int16(*x).to_bytes();
+                } else if let Some(x) = g.downcast_ref::<i32>() {
+                    buf = Value::<()>::Int32(*x).to_bytes();
+                } else if let Some(x) = g.downcast_ref::<i64>() {
+                    buf = Value::<()>::Int64(*x).to_bytes();
+                } else if let Some(x) = g.downcast_ref::<bool>() {
+                    buf = Value::<()>::Bool(*x).to_bytes();
+                } else if let Some(x) = g.downcast_ref::<char>() {
+                    buf = Value::<()>::Char(*x).to_bytes();
+                }
+            }
         }
 
         buf
     }
 
     #[allow(dead_code)]
-    pub(crate) fn encode_slice(args: &[Value]) -> Vec<u8> {
+    pub(crate) fn encode_slice(args: &[Value<T>]) -> Vec<u8> {
         let mut buf = Vec::new();
 
         for arg in args {
@@ -73,12 +91,12 @@ impl Value {
         buf
     }
 
-    pub(crate) fn from_bytes(bytes: &[u8]) -> Value {
+    pub(crate) fn from_bytes(bytes: &[u8]) -> Value<T> {
         Self::from_bytes_checked(bytes)
             .expect("internal FFI decode error: invalid bytes returned by Haskell")
     }
 
-    pub(crate) fn from_bytes_checked(bytes: &[u8]) -> Result<Value, FfiError> {
+    pub(crate) fn from_bytes_checked(bytes: &[u8]) -> Result<Value<T>, FfiError> {
         if bytes.is_empty() {
             return Err(FfiError::UnexpectedEof);
         }
@@ -190,10 +208,10 @@ impl Value {
 
 macro_rules! impl_try_from_value {
     ($target:ty, $variant:ident) => {
-        impl TryFrom<Value> for $target {
+        impl<T> TryFrom<Value<T>> for $target {
             type Error = FfiError;
 
-            fn try_from(value: Value) -> Result<Self, Self::Error> {
+            fn try_from(value: Value<T>) -> Result<Self, Self::Error> {
                 match value {
                     Value::$variant(x) => Ok(x),
                     _ => Err(FfiError::DecodeError),
@@ -215,3 +233,28 @@ impl_try_from_value!(f32, Float32);
 impl_try_from_value!(f64, Float64);
 impl_try_from_value!(bool, Bool);
 impl_try_from_value!(char, Char);
+
+impl<T: 'static> Value<T> {
+    pub fn into_generic(self) -> Result<T, FfiError> {
+        let any_val: Box<dyn Any> = match self {
+            Value::Generic(x) => return Ok(x),
+            Value::Int8(x) => Box::new(x),
+            Value::Int16(x) => Box::new(x),
+            Value::Int32(x) => Box::new(x),
+            Value::Int64(x) => Box::new(x),
+            Value::Word8(x) => Box::new(x),
+            Value::Word16(x) => Box::new(x),
+            Value::Word32(x) => Box::new(x),
+            Value::Word64(x) => Box::new(x),
+            Value::Float32(x) => Box::new(x),
+            Value::Float64(x) => Box::new(x),
+            Value::Bool(x) => Box::new(x),
+            Value::Char(x) => Box::new(x),
+        };
+
+        any_val
+            .downcast::<T>()
+            .map(|x| *x)
+            .map_err(|_| FfiError::DecodeError)
+    }
+}
