@@ -1,4 +1,4 @@
-use vinculum_hs::functions::math::{add, factorial, multiply, testfn};
+use vinculum_hs::functions::math::{add, factorial, multiply, testfn, testsum, testtuplegeneric};
 
 #[vinculum_hs::main]
 fn main() {
@@ -15,4 +15,6 @@ fn main() {
     println!("Factorial 5 = {result}");
 
     println!("{}", testfn(4));
+    println!("{}", testsum((5, 3)));
+    println!("{}", testtuplegeneric((1, 2, 3, 4)));
 }

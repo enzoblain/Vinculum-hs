@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::mem;
 
 use super::args::Arg;
@@ -60,37 +60,27 @@ impl TryInto<Function> for FunctionBuffer {
                     signature: signature.clone(),
                 })?;
 
-        let mut generics_order: Vec<String> = Vec::new();
-        let mut generics_set: HashSet<String> = HashSet::new();
+        let mut generic_map: HashMap<String, String> = HashMap::new();
+        let mut generic_order: Vec<String> = Vec::new();
 
-        let resolve_generic = |name: &str,
-                               generics_order: &mut Vec<String>,
-                               generics_set: &mut HashSet<String>|
-         -> String {
-            let index = match generics_order.iter().position(|g| g == name) {
-                Some(i) => i,
-                None => {
-                    generics_order.push(name.to_string());
-                    generics_order.len() - 1
-                }
-            };
-            let rust_name = if index == 0 {
+        let mut resolve_generic = |name: &str| -> String {
+            if let Some(existing) = generic_map.get(name) {
+                return existing.clone();
+            }
+
+            let rust_name = if generic_order.is_empty() {
                 "T".to_string()
             } else {
-                format!("T{}", index)
+                format!("T{}", generic_order.len())
             };
-            generics_set.insert(rust_name.clone());
+
+            generic_order.push(rust_name.clone());
+            generic_map.insert(name.to_string(), rust_name.clone());
             rust_name
         };
 
         let mut return_haskell = HaskellType::try_from(*return_type)?;
-        if let HaskellType::Generic {
-            name,
-            rust_generic_name,
-        } = &mut return_haskell
-        {
-            *rust_generic_name = resolve_generic(name, &mut generics_order, &mut generics_set);
-        }
+        return_haskell.resolve_generics(&mut resolve_generic);
 
         let args = if self.args.is_empty() {
             arg_types
@@ -98,14 +88,7 @@ impl TryInto<Function> for FunctionBuffer {
                 .enumerate()
                 .map(|(i, t)| {
                     let mut ty = HaskellType::try_from(*t)?;
-                    if let HaskellType::Generic {
-                        name,
-                        rust_generic_name,
-                    } = &mut ty
-                    {
-                        *rust_generic_name =
-                            resolve_generic(name, &mut generics_order, &mut generics_set);
-                    }
+                    ty.resolve_generics(&mut resolve_generic);
                     Ok(Arg::new(format!("arg{}", i), ty))
                 })
                 .collect::<Result<Vec<_>, ParseError>>()?
@@ -123,21 +106,14 @@ impl TryInto<Function> for FunctionBuffer {
                 .zip(arg_types.iter())
                 .map(|(name, t)| {
                     let mut ty = HaskellType::try_from(*t)?;
-                    if let HaskellType::Generic {
-                        name: gname,
-                        rust_generic_name,
-                    } = &mut ty
-                    {
-                        *rust_generic_name =
-                            resolve_generic(gname, &mut generics_order, &mut generics_set);
-                    }
+                    ty.resolve_generics(&mut resolve_generic);
                     Ok(Arg::new(name, ty))
                 })
                 .collect::<Result<Vec<_>, ParseError>>()?
         };
 
         Ok(Function {
-            generics: generics_set.into_iter().collect(),
+            generics: generic_order,
             description: self.description,
             name: name_ref.to_string(),
             args,

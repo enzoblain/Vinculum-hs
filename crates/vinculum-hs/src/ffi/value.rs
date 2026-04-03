@@ -15,7 +15,9 @@ pub(crate) enum Value<T> {
 
     Bool(bool),
     Char(char),
+
     Generic(T),
+    Tuple(Vec<Value<T>>),
 }
 
 #[allow(unused)]

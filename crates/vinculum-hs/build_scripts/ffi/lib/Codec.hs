@@ -19,6 +19,7 @@ data Value
     | VFloat64 Double
     | VBool Bool
     | VChar Char
+    | VTuple [Value]
 
 decodeValues :: BS.ByteString -> [Value]
 decodeValues bs
@@ -84,8 +85,22 @@ decodeOne bs =
                  in case toEnum (fromIntegral code) of
                         c -> (VChar c, remaining)
 
+            | tag == 12 ->
+                case BS.uncons rest of
+                    Nothing -> error "Invalid Tuple encoding"
+                    Just (len, payload) ->
+                        let (values, remaining) = decodeTupleValues (fromIntegral len) payload
+                         in (VTuple values, remaining)
+
             | otherwise ->
                 error ("Invalid type tag: " ++ show tag)
+
+decodeTupleValues :: Int -> BS.ByteString -> ([Value], BS.ByteString)
+decodeTupleValues 0 bs = ([], bs)
+decodeTupleValues n bs =
+    let (value, remaining) = decodeOne bs
+        (values, finalRemaining) = decodeTupleValues (n - 1) remaining
+     in (value : values, finalRemaining)
 
 encodeInt8 :: Int8 -> BS.ByteString
 encodeInt8 x =
@@ -149,6 +164,13 @@ encodeValue val = case val of
     VFloat64 x -> encodeFloat64 x
     VBool b -> encodeBool b
     VChar c -> encodeChar c
+    VTuple values ->
+        if length values > 255
+            then error "Tuple too large to encode"
+            else
+                BS.pack (12 : word8ToBytes (fromIntegral (length values)))
+                    `BS.append`
+                    BS.concat (map encodeValue values)
 
 word8ToBytes :: Word8 -> [Word8]
 word8ToBytes w = [w]

@@ -15,3 +15,9 @@ factorial n = n * factorial (n - 1)
 
 testfn :: a -> a
 testfn arg = arg
+
+testsum :: (Int64, Int64) -> Int64
+testsum (a, b) = a + b
+
+testtuplegeneric :: (a, a, a, a) -> a
+testtuplegeneric (x, _, _, _) = x

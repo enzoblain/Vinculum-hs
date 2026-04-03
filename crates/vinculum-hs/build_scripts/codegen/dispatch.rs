@@ -42,11 +42,7 @@ fn generate_dispatch_branch(function: &Function, module_name: &str) -> String {
         .args
         .iter()
         .map(|arg| {
-            if arg.r#type.is_generic() {
-                arg.name.clone()
-            } else {
-                format!("V{} {}", arg.r#type.haskell_name(), &arg.name)
-            }
+            arg.r#type.haskell_pattern(&arg.name)
         })
         .collect::<Vec<_>>()
         .join(", ");
@@ -66,11 +62,7 @@ fn generate_dispatch_branch(function: &Function, module_name: &str) -> String {
     };
 
     let converted_result = function.r#return.from_haskell_value(&function_call);
-    let encoder = if function.r#return.is_generic() {
-        "encodeValue".to_string()
-    } else {
-        format!("encode{}", function.r#return.haskell_name())
-    };
+    let encoder = function.r#return.haskell_encoder();
 
     format!(
         concat!(

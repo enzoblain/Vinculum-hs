@@ -84,10 +84,6 @@ pub fn {name}{generics}({args_sig}) -> {return_type} {{
         return_type = return_type,
         qualified_name = qualified_name,
         args_values = args_values,
-        conversion = if function.r#return.is_generic() {
-            "into_generic()"
-        } else {
-            "try_into()"
-        },
+        conversion = function.r#return.rust_return_conversion(),
     )
 }

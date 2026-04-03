@@ -75,6 +75,14 @@ impl<T: 'static> Value<T> {
                     buf = Value::<()>::Char(*x).to_bytes();
                 }
             }
+            Value::Tuple(t) => {
+                buf.push(12);
+                buf.push(t.len() as u8);
+
+                for v in t {
+                    buf.extend_from_slice(&v.to_bytes());
+                }
+            }
         }
 
         buf
@@ -97,6 +105,10 @@ impl<T: 'static> Value<T> {
     }
 
     pub(crate) fn from_bytes_checked(bytes: &[u8]) -> Result<Value<T>, FfiError> {
+        Self::decode_one(bytes).map(|(value, _)| value)
+    }
+
+    fn decode_one(bytes: &[u8]) -> Result<(Value<T>, usize), FfiError> {
         if bytes.is_empty() {
             return Err(FfiError::UnexpectedEof);
         }
@@ -110,7 +122,7 @@ impl<T: 'static> Value<T> {
                 }
                 let mut arr = [0u8; 1];
                 arr.copy_from_slice(&bytes[1..2]);
-                Ok(Value::Int8(i8::from_le_bytes(arr)))
+                Ok((Value::Int8(i8::from_le_bytes(arr)), 2))
             }
             1 => {
                 if bytes.len() < 3 {
@@ -118,7 +130,7 @@ impl<T: 'static> Value<T> {
                 }
                 let mut arr = [0u8; 2];
                 arr.copy_from_slice(&bytes[1..3]);
-                Ok(Value::Int16(i16::from_le_bytes(arr)))
+                Ok((Value::Int16(i16::from_le_bytes(arr)), 3))
             }
             2 => {
                 if bytes.len() < 5 {
@@ -126,7 +138,7 @@ impl<T: 'static> Value<T> {
                 }
                 let mut arr = [0u8; 4];
                 arr.copy_from_slice(&bytes[1..5]);
-                Ok(Value::Int32(i32::from_le_bytes(arr)))
+                Ok((Value::Int32(i32::from_le_bytes(arr)), 5))
             }
             3 => {
                 if bytes.len() < 9 {
@@ -134,7 +146,7 @@ impl<T: 'static> Value<T> {
                 }
                 let mut arr = [0u8; 8];
                 arr.copy_from_slice(&bytes[1..9]);
-                Ok(Value::Int64(i64::from_le_bytes(arr)))
+                Ok((Value::Int64(i64::from_le_bytes(arr)), 9))
             }
             4 => {
                 if bytes.len() < 2 {
@@ -142,7 +154,7 @@ impl<T: 'static> Value<T> {
                 }
                 let mut arr = [0u8; 1];
                 arr.copy_from_slice(&bytes[1..2]);
-                Ok(Value::Word8(u8::from_le_bytes(arr)))
+                Ok((Value::Word8(u8::from_le_bytes(arr)), 2))
             }
             5 => {
                 if bytes.len() < 3 {
@@ -150,7 +162,7 @@ impl<T: 'static> Value<T> {
                 }
                 let mut arr = [0u8; 2];
                 arr.copy_from_slice(&bytes[1..3]);
-                Ok(Value::Word16(u16::from_le_bytes(arr)))
+                Ok((Value::Word16(u16::from_le_bytes(arr)), 3))
             }
             6 => {
                 if bytes.len() < 5 {
@@ -158,7 +170,7 @@ impl<T: 'static> Value<T> {
                 }
                 let mut arr = [0u8; 4];
                 arr.copy_from_slice(&bytes[1..5]);
-                Ok(Value::Word32(u32::from_le_bytes(arr)))
+                Ok((Value::Word32(u32::from_le_bytes(arr)), 5))
             }
             7 => {
                 if bytes.len() < 9 {
@@ -166,7 +178,7 @@ impl<T: 'static> Value<T> {
                 }
                 let mut arr = [0u8; 8];
                 arr.copy_from_slice(&bytes[1..9]);
-                Ok(Value::Word64(u64::from_le_bytes(arr)))
+                Ok((Value::Word64(u64::from_le_bytes(arr)), 9))
             }
             8 => {
                 if bytes.len() < 5 {
@@ -174,7 +186,7 @@ impl<T: 'static> Value<T> {
                 }
                 let mut arr = [0u8; 4];
                 arr.copy_from_slice(&bytes[1..5]);
-                Ok(Value::Float32(f32::from_le_bytes(arr)))
+                Ok((Value::Float32(f32::from_le_bytes(arr)), 5))
             }
             9 => {
                 if bytes.len() < 9 {
@@ -182,13 +194,13 @@ impl<T: 'static> Value<T> {
                 }
                 let mut arr = [0u8; 8];
                 arr.copy_from_slice(&bytes[1..9]);
-                Ok(Value::Float64(f64::from_le_bytes(arr)))
+                Ok((Value::Float64(f64::from_le_bytes(arr)), 9))
             }
             10 => {
                 if bytes.len() < 2 {
                     return Err(FfiError::UnexpectedEof);
                 }
-                Ok(Value::Bool(bytes[1] != 0))
+                Ok((Value::Bool(bytes[1] != 0), 2))
             }
             11 => {
                 if bytes.len() < 5 {
@@ -199,7 +211,27 @@ impl<T: 'static> Value<T> {
                 let code = u32::from_le_bytes(arr);
                 char::from_u32(code)
                     .map(Value::Char)
+                    .map(|value| (value, 5))
                     .ok_or(FfiError::InvalidChar(code))
+            }
+            12 => {
+                if bytes.len() < 2 {
+                    return Err(FfiError::UnexpectedEof);
+                }
+
+                let tuple_len = bytes[1] as usize;
+                let mut values = Vec::with_capacity(tuple_len);
+                let mut offset = 2;
+
+                for _ in 0..tuple_len {
+                    let (value, consumed) = Self::decode_one(&bytes[offset..])?;
+
+                    values.push(value);
+
+                    offset += consumed;
+                }
+
+                Ok((Value::Tuple(values), offset))
             }
             _ => Err(FfiError::InvalidTag(tag)),
         }
@@ -235,6 +267,7 @@ impl_try_from_value!(bool, Bool);
 impl_try_from_value!(char, Char);
 
 impl<T: 'static + AcceptedTypes> Value<T> {
+    #[allow(unused)]
     pub fn into_generic(self) -> Result<T, FfiError> {
         let any_val: Box<dyn Any> = match self {
             Value::Generic(x) => return Ok(x),
@@ -250,6 +283,7 @@ impl<T: 'static + AcceptedTypes> Value<T> {
             Value::Float64(x) => Box::new(x),
             Value::Bool(x) => Box::new(x),
             Value::Char(x) => Box::new(x),
+            Value::Tuple(_) => return Err(FfiError::DecodeError),
         };
 
         any_val
