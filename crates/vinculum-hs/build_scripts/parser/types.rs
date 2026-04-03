@@ -46,6 +46,7 @@ impl TryFrom<&str> for HaskellType {
         }
 
         match s {
+            "Int" => Ok(Self::I64),
             "Int8" => Ok(Self::I8),
             "Int16" => Ok(Self::I16),
             "Int32" => Ok(Self::I32),
@@ -215,22 +216,10 @@ impl HaskellType {
         }
     }
 
-    pub(crate) fn haskell_encoder(&self) -> &'static str {
+    pub(crate) fn haskell_encoder(&self) -> String {
         match self {
-            HaskellType::I8 => "encodeInt8",
-            HaskellType::I16 => "encodeInt16",
-            HaskellType::I32 => "encodeInt32",
-            HaskellType::I64 => "encodeInt64",
-            HaskellType::U8 => "encodeWord8",
-            HaskellType::U16 => "encodeWord16",
-            HaskellType::U32 => "encodeWord32",
-            HaskellType::U64 => "encodeWord64",
-            HaskellType::F32 => "encodeFloat32",
-            HaskellType::F64 => "encodeFloat64",
-            HaskellType::Bool => "encodeBool",
-            HaskellType::Char => "encodeChar",
-            HaskellType::String => "encodeString",
-            HaskellType::Generic { .. } | HaskellType::Tuple(_) => "encodeValue",
+            HaskellType::Generic { .. } | HaskellType::Tuple(_) => "encodeValue".to_string(),
+            _ => format!("encode{}", self.value_variant_name()),
         }
     }
 
