@@ -1,0 +1,36 @@
+cabal-version:      3.0
+name:               haskell-fallback
+version:            0.1.0.0
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             enzoblain
+maintainer:         enzoblain@proton.me
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+common warnings
+    ghc-options:      -Wall
+
+executable haskell-fallback
+    import:           warnings
+    main-is:          Main.hs
+    build-depends:    base ^>=4.18.3.0
+    hs-source-dirs:   app
+    default-language: Haskell2010
+
+foreign-library lib
+    type:             native-shared
+    hs-source-dirs:   app, app/exports, app/exports/vinculum, app/exports/vinculum/generated
+    other-modules:
+        Codec
+        Runtime
+        Dispatch
+        UserFunctions
+    c-sources:
+        app/exports/vinculum/StubbsRTS.c
+    build-depends:
+        base ^>=4.18.3.0,
+        bytestring
+    default-language: Haskell2010
+    if os(windows)
+        options:      standalone

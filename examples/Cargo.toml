@@ -1,0 +1,15 @@
+[package]
+name = "vinculum-examples"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+vinculum-hs = { path = "../crates/vinculum-hs" }
+
+[build-dependencies]
+vinculum-hs = { path = "../crates/vinculum-hs" }
+
+[package.metadata]
+cabal_file = "haskell/haskell.cabal"
+exports_dir = "haskell/app/exports"
+foreign_library = "lib"

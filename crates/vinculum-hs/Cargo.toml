@@ -20,13 +20,7 @@ name = "vinculum_hs"
 
 [dependencies]
 vinculum-hs-macros = { version = "0.1.0", path = "../vinculum-hs-macros" }
-
-[build-dependencies]
-toml = "1.1.2"
+cargo_metadata = "0.23.1"
 
 [features]
 default = []
-
-[[example]]
-name = "math"
-path = "../../examples/math.rs"

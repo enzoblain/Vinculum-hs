@@ -1,5 +1,5 @@
 [workspace]
-members = ["crates/vinculum-hs", "crates/vinculum-hs-macros"]
+members = ["crates/vinculum-hs", "crates/vinculum-hs-macros", "examples"]
 resolver = "3"
 
 [workspace.package]

@@ -17,8 +17,9 @@ pub(crate) fn generate_functions_with_modules(file_modules: &[(String, Vec<Funct
         let rust_module_name = to_snake_case(module_name);
 
         code.push_str(&format!("pub mod {} {{\n", rust_module_name));
-        code.push_str("    use crate::ffi::call::call_haskell_typed;\n");
-        code.push_str("    use crate::ffi::value::{AcceptedTypes, Value};\n\n");
+        code.push_str("    use vinculum_hs::ffi::call::call_haskell_typed;\n");
+        code.push_str("    #[allow(unused_imports)]\n");
+        code.push_str("    use vinculum_hs::ffi::value::{AcceptedTypes, Value};\n\n");
 
         for function in functions {
             code.push_str("    ");
@@ -34,7 +35,11 @@ pub(crate) fn generate_functions_with_modules(file_modules: &[(String, Vec<Funct
 }
 
 fn generate_function(function: &Function, module_name: &str) -> String {
-    let type_param = if function.generics.is_empty() { "()" } else { "T" };
+    let type_param = if function.generics.is_empty() {
+        "()"
+    } else {
+        "T"
+    };
 
     let args_sig = function
         .args
@@ -70,7 +75,7 @@ fn generate_function(function: &Function, module_name: &str) -> String {
         .join("\n");
 
     format!(
-        "{}#[allow(non_snake_case, unused_variables, unused_qualifications, dead_code)]
+        "{}#[allow(non_snake_case, dead_code)]
 pub fn {name}{generics}({args_sig}) -> {return_type} {{
     call_haskell_typed(\"{qualified_name}\", &[{args_values}])
         .{conversion}.expect(\"internal FFI type error: invalid return type\")

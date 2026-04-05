@@ -1,5 +1,5 @@
 #[allow(unused)]
-pub(crate) enum Value<T> {
+pub enum Value<T> {
     Int8(i8),
     Int16(i16),
     Int32(i32),

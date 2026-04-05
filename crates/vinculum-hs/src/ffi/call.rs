@@ -5,7 +5,7 @@ use crate::ffi::errors::FfiError;
 use crate::ffi::value::Value;
 
 #[allow(dead_code)]
-pub(crate) fn call_haskell_typed<T: 'static>(name: &str, args: &[Value<T>]) -> Value<T> {
+pub fn call_haskell_typed<T: 'static>(name: &str, args: &[Value<T>]) -> Value<T> {
     call_haskell_typed_checked(name, args)
         .expect("internal FFI error while calling Haskell function")
 }

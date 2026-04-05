@@ -3,6 +3,7 @@ use std::path::Path;
 
 use crate::build_scripts::parser::{Function, extract_functions};
 
+#[allow(dead_code)]
 pub(crate) fn collect_file_modules(
     src_dir: &Path,
     dest_dir: &Path,
@@ -91,4 +92,40 @@ pub fn to_snake_case(s: &str) -> String {
     }
 
     result
+}
+
+pub(crate) fn collect_haskell_modules_from_exports(
+    exports_dir: &Path,
+) -> Vec<(String, Vec<Function>)> {
+    let mut modules = Vec::new();
+
+    if let Ok(entries) = fs::read_dir(exports_dir) {
+        collect_modules_recursive(
+            &entries.flatten().map(|e| e.path()).collect::<Vec<_>>(),
+            &mut modules,
+        );
+    }
+
+    modules
+}
+
+fn collect_modules_recursive(
+    paths: &[std::path::PathBuf],
+    modules: &mut Vec<(String, Vec<Function>)>,
+) {
+    for path in paths {
+        if path.is_file()
+            && let Some("hs") = path.extension().and_then(|s| s.to_str())
+            && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
+            && let Ok(functions) = extract_functions(path)
+            && !functions.is_empty()
+        {
+            modules.push((capitalize_first(stem), functions));
+        } else if path.is_dir()
+            && let Ok(entries) = fs::read_dir(path)
+        {
+            let sub_paths: Vec<_> = entries.flatten().map(|e| e.path()).collect();
+            collect_modules_recursive(&sub_paths, modules);
+        }
+    }
 }
