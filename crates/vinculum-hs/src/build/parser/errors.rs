@@ -1,81 +1,28 @@
-use std::error;
-use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::io;
 use std::path::PathBuf;
 
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub(crate) enum ParseError {
-    ReadFile {
-        path: PathBuf,
-        source: io::Error,
-    },
+    #[error("failed to read file '{}': {source}", path.display())]
+    ReadFile { path: PathBuf, source: io::Error },
+    #[error("empty function signature")]
     EmptySignature,
-    InvalidFunctionName {
-        name: String,
-        signature: String,
-    },
-    ReservedRustKeyword {
-        name: String,
-    },
+    #[error(
+        "invalid function name `{name}` in signature `{signature}` (not a valid Rust identifier)"
+    )]
+    InvalidFunctionName { name: String, signature: String },
+    #[error("name `{name}` is a reserved Rust keyword")]
+    ReservedRustKeyword { name: String },
+    #[error("unsupported type `{0}`")]
     UnsupportedHaskellType(String),
-    MissingHaskellTypeAnnotation {
-        signature: String,
-    },
-    MissingReturnHaskellType {
-        signature: String,
-    },
+    #[error("missing type annotation in signature `{signature}` (expected `::`)")]
+    MissingHaskellTypeAnnotation { signature: String },
+    #[error("missing return type in signature `{signature}`")]
+    MissingReturnHaskellType { signature: String },
+    #[error("argument count mismatch in `{signature}`: expected {expected}, found {found}")]
     ArgumentCountMismatch {
         expected: usize,
         found: usize,
         signature: String,
     },
 }
-
-impl Display for ParseError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
-        match self {
-            ParseError::ReadFile { path, source } => {
-                write!(f, "failed to read file '{}': {}", path.display(), source)
-            }
-            ParseError::EmptySignature => {
-                write!(f, "empty function signature")
-            }
-            ParseError::InvalidFunctionName { name, signature } => {
-                write!(
-                    f,
-                    "invalid function name `{}` in signature `{}` (not a valid Rust identifier)",
-                    name, signature
-                )
-            }
-            ParseError::ReservedRustKeyword { name } => {
-                write!(f, "name `{}` is a reserved Rust keyword", name)
-            }
-            ParseError::UnsupportedHaskellType(t) => {
-                write!(f, "unsupported type `{}`", t)
-            }
-            ParseError::MissingHaskellTypeAnnotation { signature } => {
-                write!(
-                    f,
-                    "missing type annotation in signature `{}` (expected `::`)",
-                    signature
-                )
-            }
-            ParseError::MissingReturnHaskellType { signature } => {
-                write!(f, "missing return type in signature `{}`", signature)
-            }
-            ParseError::ArgumentCountMismatch {
-                expected,
-                found,
-                signature,
-            } => {
-                write!(
-                    f,
-                    "argument count mismatch in `{}`: expected {}, found {}",
-                    signature, expected, found
-                )
-            }
-        }
-    }
-}
-
-impl error::Error for ParseError {}

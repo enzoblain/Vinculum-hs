@@ -1,25 +1,13 @@
-use std::error::Error;
-use std::fmt;
-
-#[derive(Debug)]
+#[derive(Debug, thiserror::Error)]
 pub enum FfiError {
+    #[error("Received null pointer from Haskell")]
     NullPointer,
+    #[error("Invalid type tag: {0}")]
     InvalidTag(u8),
+    #[error("Unexpected end of input")]
     UnexpectedEof,
+    #[error("Invalid char code: {0}")]
     InvalidChar(u32),
+    #[error("Failed to decode value")]
     DecodeError,
 }
-
-impl fmt::Display for FfiError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            FfiError::NullPointer => write!(f, "Received null pointer from Haskell"),
-            FfiError::InvalidTag(tag) => write!(f, "Invalid type tag: {}", tag),
-            FfiError::UnexpectedEof => write!(f, "Unexpected end of input"),
-            FfiError::InvalidChar(c) => write!(f, "Invalid char code: {}", c),
-            FfiError::DecodeError => write!(f, "Failed to decode value"),
-        }
-    }
-}
-
-impl Error for FfiError {}

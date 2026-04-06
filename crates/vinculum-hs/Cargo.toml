@@ -21,6 +21,7 @@ name = "vinculum_hs"
 [dependencies]
 vinculum-hs-macros = { version = "0.1.0", path = "../vinculum-hs-macros" }
 cargo_metadata = "0.23.1"
+thiserror = "2.0.18"
 
 [features]
 default = []
